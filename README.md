@@ -92,13 +92,13 @@ La app frontend queda en http://localhost:5173 y la API en http://localhost:4000
 
 ## Publicar frontend en GitHub Pages
 
-El repositorio quedo organizado para que GitHub Pages sirva el frontend desde la carpeta `docs` en la raiz.
+El repositorio quedo organizado para que GitHub Pages sirva el frontend desde la raiz del repo.
 
 1. Desde `frontend`, ejecuta `npm run build:github`
-2. Eso genera `docs/index.html` y sus assets en la raiz del repo
+2. El build compila primero en `docs` y luego copia `index.html`, `assets` y archivos publicos a la raiz del repo
 3. En GitHub, ve a Settings > Pages
 4. En Source, selecciona `Deploy from a branch`
-5. Elige la rama `main` y la carpeta `/docs`
+5. Elige la rama `main` y la carpeta `/ (root)`
 
 Importante: GitHub Pages solo puede servir el frontend estatico. El backend Express y PostgreSQL deben seguir desplegados aparte.
 
