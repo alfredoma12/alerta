@@ -7,7 +7,7 @@ const apiBaseUrl = configuredApiUrl || 'http://localhost:3001'
 
 if (isProd && !configuredApiUrl) {
   // eslint-disable-next-line no-console
-  console.warn('VITE_API_URL no esta configurado en produccion. Configura la URL publica del tunnel de Cloudflare.')
+  console.warn('VITE_API_URL no esta configurado en produccion. Configura la URL publica del servicio en Render.')
 }
 
 if (!configuredApiKey) {
