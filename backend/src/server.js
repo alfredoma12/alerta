@@ -8,7 +8,7 @@ const { db, initDatabase } = require('./db');
 const app = express();
 const port = Number(process.env.PORT || 3001);
 const apiKey = process.env.API_KEY;
-const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://TU_USUARIO.github.io';
+const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://alfredoma12.github.io';
 
 if (!apiKey || !apiKey.trim()) {
   throw new Error('Falta API_KEY en variables de entorno.');
