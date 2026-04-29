@@ -23,7 +23,7 @@ Backend simple en Node.js con Express y SQLite, sin Prisma ni PostgreSQL.
 ```env
 PORT=3001
 API_KEY=mi_clave_segura
-ALLOWED_ORIGIN=https://TU_USUARIO.github.io
+ALLOWED_ORIGIN=https://alfredoma12.github.io
 ```
 
 ### Frontend `.env.development`
@@ -36,7 +36,7 @@ VITE_API_KEY=mi_clave_segura
 ### Frontend `.env.production`
 
 ```env
-VITE_API_URL=https://TU-TUNNEL.trycloudflare.com
+VITE_API_URL=https://tu-api-fjlx.onrender.com
 VITE_API_KEY=mi_clave_segura
 ```
 
@@ -58,7 +58,7 @@ npm install
 
 ```env
 API_KEY=mi_clave_segura
-ALLOWED_ORIGIN=https://TU_USUARIO.github.io
+ALLOWED_ORIGIN=https://alfredoma12.github.io
 PORT=3001
 ```
 
@@ -83,20 +83,23 @@ npm run dev
 
 Para desarrollo local, usa `front/.env.development` con `VITE_API_URL=http://localhost:3001`.
 
-## Levantar Cloudflare Tunnel
+## Deploy backend en Render
 
-Con `cloudflared` instalado:
-
-```bash
-cloudflared tunnel --url http://localhost:3001
-```
-
-Cloudflare te entregara una URL publica con formato `https://xxxx.trycloudflare.com`.
-
-Luego actualiza `front/.env.production`:
+1. Crea un Web Service en Render apuntando a la carpeta `backend`.
+2. Configura Start Command: `npm start`.
+3. Variables de entorno en Render:
 
 ```env
-VITE_API_URL=https://TU-TUNNEL.trycloudflare.com
+PORT=10000
+API_KEY=mi_clave_segura
+ALLOWED_ORIGIN=https://alfredoma12.github.io
+```
+
+4. Usa la URL publica entregada por Render (ejemplo: `https://tu-api-fjlx.onrender.com`).
+5. Actualiza `front/.env.production`:
+
+```env
+VITE_API_URL=https://tu-api-fjlx.onrender.com
 VITE_API_KEY=mi_clave_segura
 ```
 
@@ -110,7 +113,7 @@ npm run build:github
 
 Despues publica la rama en GitHub Pages (source: rama `main`, carpeta `/ (root)`).
 
-Importante: en produccion no uses localhost en `VITE_API_URL`. Debe ser la URL publica del tunnel.
+Importante: en produccion no uses localhost en `VITE_API_URL`. Debe ser la URL publica de Render.
 
 ## Endpoints
 

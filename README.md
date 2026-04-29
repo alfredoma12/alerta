@@ -11,8 +11,7 @@ Estructura final limpia:
 GitHub Pages solo sirve archivos estaticos. En tu caso:
 
 - Se publica el frontend compilado (raiz del repo)
-- El backend queda corriendo en tu PC
-- Cloudflare Tunnel expone el backend de forma publica
+- El backend queda desplegado en Render
 
 ## Variables de entorno
 
@@ -21,7 +20,7 @@ GitHub Pages solo sirve archivos estaticos. En tu caso:
 ```env
 PORT=3001
 API_KEY=mi_clave_segura
-ALLOWED_ORIGIN=https://TU_USUARIO.github.io
+ALLOWED_ORIGIN=https://alfredoma12.github.io
 ```
 
 ### Frontend local (`front/.env.development`)
@@ -34,7 +33,7 @@ VITE_API_KEY=mi_clave_segura
 ### Frontend produccion (`front/.env.production`)
 
 ```env
-VITE_API_URL=https://TU-TUNNEL.trycloudflare.com
+VITE_API_URL=https://tu-api-fjlx.onrender.com
 VITE_API_KEY=mi_clave_segura
 ```
 
@@ -56,13 +55,14 @@ npm install
 npm run dev
 ```
 
-3. Exponer backend con Cloudflare Tunnel:
+3. Deploy backend en Render:
 
-```bash
-cloudflared tunnel --url http://localhost:3001
-```
+- En Render crea un Web Service desde `backend`
+- Start command: `npm start`
+- Variables: `PORT`, `API_KEY`, `ALLOWED_ORIGIN=https://alfredoma12.github.io`
+- URL publica: `https://tu-api-fjlx.onrender.com`
 
-4. Pegar la URL del tunnel en `front/.env.production`.
+4. Pegar la URL de Render en `front/.env.production`.
 
 5. Compilar frontend para GitHub Pages (deja `index.html` en raiz):
 
