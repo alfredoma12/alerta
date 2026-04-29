@@ -1,139 +1,80 @@
-# RiskVerify
+﻿# Proyecto Listo (Front + Backend)
 
-Plataforma web tipo startup para verificacion de riesgo sobre posibles estafas y vehiculos robados.
+Estructura final limpia:
 
-## Stack
+- `front`: frontend React/Vite
+- `backend`: backend Express + SQLite
+- `index.html` y `assets` en la raiz para GitHub Pages
 
-- Frontend: React + Vite + TailwindCSS
-- Backend: Node.js + Express
-- Base de datos: PostgreSQL (Railway en esta primera etapa) + Prisma ORM
-- Autenticacion: JWT
+## Si, subes solo el frontend a GitHub Pages
 
-## Caracteristicas clave
+GitHub Pages solo sirve archivos estaticos. En tu caso:
 
-- Home estilo startup con hero, buscador grande y UI clara tipo producto SaaS.
-- Busqueda instantanea por nombre, RUT y patente con normalizacion previa.
-- Normalizacion reutilizable de RUT y patente en backend y frontend.
-- Reportes siempre en estado `pending` al crearse.
-- Moderacion admin para aprobar, rechazar o eliminar reportes.
-- Publicacion solo de reportes `approved`.
-- Validacion con Zod, sanitizacion basica y rate limiting anti-spam.
-- Disclaimer legal visible y checkbox obligatorio al crear reportes.
-- Arquitectura portable: para salir de Railway solo cambia `DATABASE_URL`.
+- Se publica el frontend compilado (raiz del repo)
+- El backend queda corriendo en tu PC
+- Cloudflare Tunnel expone el backend de forma publica
 
-## Estructura
+## Variables de entorno
 
-- frontend: aplicacion React
-- backend: API Express + Prisma
-
-## Configuracion de variables de entorno
-
-### Backend
-
-1. Copia `backend/.env.example` a `backend/.env`
-2. Ajusta `DATABASE_URL`, `JWT_SECRET`, `PORT` y `CORS_ORIGIN`
-3. Si usas Railway, pega la URL PostgreSQL entregada por Railway en `DATABASE_URL`
-
-Ejemplo de variables:
+### Backend (`backend/.env`)
 
 ```env
-DATABASE_URL="postgresql://postgres:password@containers-us-west-xx.railway.app:5432/railway"
-JWT_SECRET="cambia-esto-por-un-secreto-seguro"
-PORT="4000"
-CORS_ORIGIN="http://localhost:5173"
-JWT_EXPIRES_IN="7d"
+PORT=3001
+API_KEY=mi_clave_segura
+ALLOWED_ORIGIN=https://TU_USUARIO.github.io
 ```
 
-Nota: no hay dependencia rigida con Railway. Prisma usa una conexion PostgreSQL estandar, por lo que puedes migrar a Neon, Render, Supabase, RDS o un servidor propio modificando solo `DATABASE_URL`.
+### Frontend local (`front/.env.development`)
 
-### Frontend
+```env
+VITE_API_URL=http://localhost:3001
+VITE_API_KEY=mi_clave_segura
+```
 
-1. Copia `frontend/.env.example` a `frontend/.env`
-2. Ajusta `VITE_API_URL` si necesitas otro host o puerto
+### Frontend produccion (`front/.env.production`)
 
-## Base de datos y Prisma
+```env
+VITE_API_URL=https://TU-TUNNEL.trycloudflare.com
+VITE_API_KEY=mi_clave_segura
+```
 
-Desde backend:
+## Flujo de trabajo
 
-1. Generar cliente Prisma:
-   `npm run prisma:generate`
-2. Crear migracion inicial local:
-   `npm run prisma:migrate -- --name init`
-3. Aplicar migraciones en produccion:
-   `npm run prisma:migrate:deploy`
+1. Levantar backend:
 
-## Railway
+```bash
+cd backend
+npm install
+npm start
+```
 
-1. Crea una base PostgreSQL en Railway.
-2. Copia la variable de conexion PostgreSQL entregada por Railway.
-3. Pega esa URL en `backend/.env` como `DATABASE_URL`.
-4. Ejecuta desde `backend`:
-   `npm run prisma:generate`
-5. Ejecuta la migracion inicial:
-   `npm run prisma:migrate -- --name init`
+2. Levantar frontend local:
 
-Si luego migras a otro proveedor, repites exactamente el mismo flujo con otra `DATABASE_URL`.
+```bash
+cd front
+npm install
+npm run dev
+```
 
-## Ejecucion en desarrollo
+3. Exponer backend con Cloudflare Tunnel:
 
-En dos terminales:
+```bash
+cloudflared tunnel --url http://localhost:3001
+```
 
-1. Backend
-   - `cd backend`
-   - `npm install`
-   - `npm run dev`
+4. Pegar la URL del tunnel en `front/.env.production`.
 
-2. Frontend
-   - `cd frontend`
-   - `npm install`
-   - `npm run dev`
+5. Compilar frontend para GitHub Pages (deja `index.html` en raiz):
 
-La app frontend queda en http://localhost:5173 y la API en http://localhost:4000.
+```bash
+cd front
+npm run build:github
+```
 
-## Publicar frontend en GitHub Pages
+6. Subir cambios a GitHub y publicar Pages desde `main` en `/ (root)`.
 
-El repositorio quedo organizado para que GitHub Pages sirva el frontend desde la raiz del repo.
+## Notas
 
-1. Desde `frontend`, ejecuta `npm run build:github`
-2. El build compila primero en `docs` y luego copia `index.html`, `assets` y archivos publicos a la raiz del repo
-3. En GitHub, ve a Settings > Pages
-4. En Source, selecciona `Deploy from a branch`
-5. Elige la rama `main` y la carpeta `/ (root)`
-
-Importante: GitHub Pages solo puede servir el frontend estatico. El backend Express y PostgreSQL deben seguir desplegados aparte.
-
-### Si aparece error CORS con localhost desde GitHub Pages
-
-Ese error ocurre cuando el frontend publicado llama a `http://localhost:4000/api`.
-
-1. Crea `frontend/.env.production` con:
-   `VITE_API_URL="https://TU-BACKEND.up.railway.app/api"`
-2. Vuelve a compilar y publicar:
-   `cd frontend && npm run build:github`
-3. En Railway, configura en backend:
-   - `CORS_ORIGIN="http://localhost:5173"`
-   - `CORS_ORIGINS="https://asdteam2.github.io"`
-4. Redeploy del backend en Railway.
-
-Con eso, GitHub Pages dejara de llamar a localhost y podra consumir tu API real.
-
-## Cuentas y roles
-
-- Registro e inicio de sesion disponibles en la interfaz.
-- El rol por defecto es USER.
-- Para probar moderacion, cambia manualmente un usuario a ADMIN en la base de datos.
-
-## Endpoints principales
-
-- GET /api/search?q=valor
-- POST /api/reports
-- GET /api/reports/:id
-- PATCH /api/reports/:id (ADMIN)
-- POST /api/auth/register
-- POST /api/auth/login
-- GET /api/admin/reports/pending (ADMIN)
-- DELETE /api/admin/reports/:id (ADMIN)
-
-## Aviso legal usado en la interfaz
-
-Esta plataforma muestra reportes generados por usuarios. La informacion debe ser verificada antes de tomar decisiones.
+- No usar localhost en produccion.
+- `VITE_*` es visible en frontend, por lo que esa API key no es secreta real.
+- Se mantiene rate limit, CORS estricto y validaciones en backend.
