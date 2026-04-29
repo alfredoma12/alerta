@@ -45,9 +45,10 @@ app.use(
 );
 
 function apiKeyMiddleware(req, res, next) {
-  const incomingApiKey = req.header('x-api-key');
+  const incomingApiKey = (req.header('x-api-key') || '').trim();
+  const expectedApiKey = (apiKey || '').trim();
 
-  if (incomingApiKey !== apiKey) {
+  if (!incomingApiKey || incomingApiKey !== expectedApiKey) {
     res.status(403).json({ error: 'API key invalida.' });
     return;
   }
