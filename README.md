@@ -3,7 +3,7 @@
 Estructura final limpia:
 
 - `front`: frontend React/Vite
-- `backend`: backend Express + SQLite
+- `backend`: backend Express + PostgreSQL
 - `index.html` y `assets` en la raiz para GitHub Pages
 
 ## Si, subes solo el frontend a GitHub Pages
@@ -21,6 +21,8 @@ GitHub Pages solo sirve archivos estaticos. En tu caso:
 PORT=3001
 API_KEY=mi_clave_segura
 ALLOWED_ORIGINS=https://alfredoma12.github.io,https://alerta-7k4.pages.dev
+DATABASE_URL=postgresql://usuario:password@host:5432/database
+PGSSLMODE=require
 ```
 
 ### Frontend local (`front/.env.development`)
@@ -59,7 +61,7 @@ npm run dev
 
 - En Render crea un Web Service desde `backend`
 - Start command: `npm start`
-- Variables: `PORT`, `API_KEY`, `ALLOWED_ORIGINS=https://alfredoma12.github.io,https://alerta-7k4.pages.dev`
+- Variables: `PORT`, `API_KEY`, `ALLOWED_ORIGINS=https://alfredoma12.github.io,https://alerta-7k4.pages.dev`, `DATABASE_URL`, `PGSSLMODE=require`
 - URL publica: `https://tu-api-fjlx.onrender.com`
 
 4. Pegar la URL de Render en `front/.env.production`.

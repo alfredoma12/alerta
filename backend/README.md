@@ -1,17 +1,18 @@
-# Backend SQLite (Express)
+# Backend PostgreSQL (Express)
 
-Backend simple en Node.js con Express y SQLite, sin Prisma ni PostgreSQL.
+Backend en Node.js con Express y PostgreSQL, pensado para correr en Render.
 
 ## Requisitos cumplidos
 
 - Servidor Express en puerto `3001` (configurable por `PORT`)
-- Base local SQLite: `database.db`
-- Tabla `vehicles` creada automaticamente si no existe
+- Conexion a PostgreSQL mediante `DATABASE_URL`
+- Tabla `vehicles` e indice por `patente` creados automaticamente si no existen
 - Endpoints:
   - `POST /api/vehicles`
   - `GET /api/vehicles/:patente`
+  - `GET /search`
 - Seguridad con header `x-api-key` (lee `API_KEY` desde `.env`)
-- CORS limitado a `https://TU_USUARIO.github.io` (o `ALLOWED_ORIGIN`)
+- CORS limitado por lista de dominios en `ALLOWED_ORIGINS`
 - Rate limit de `100` requests por IP cada `15` minutos
 - Validacion de `patente` (obligatoria, maximo 10 caracteres)
 - Manejo de errores `500` para base de datos y `404` para no encontrado
@@ -23,7 +24,9 @@ Backend simple en Node.js con Express y SQLite, sin Prisma ni PostgreSQL.
 ```env
 PORT=3001
 API_KEY=mi_clave_segura
-ALLOWED_ORIGIN=https://alfredoma12.github.io
+ALLOWED_ORIGINS=https://alfredoma12.github.io,https://alerta-7k4.pages.dev
+DATABASE_URL=postgresql://usuario:password@host:5432/database
+PGSSLMODE=require
 ```
 
 ### Frontend `.env.development`
@@ -58,8 +61,10 @@ npm install
 
 ```env
 API_KEY=mi_clave_segura
-ALLOWED_ORIGIN=https://alfredoma12.github.io
+ALLOWED_ORIGINS=https://alfredoma12.github.io,https://alerta-7k4.pages.dev
 PORT=3001
+DATABASE_URL=postgresql://usuario:password@host:5432/database
+PGSSLMODE=disable
 ```
 
 4. Ejecuta servidor:
@@ -92,7 +97,9 @@ Para desarrollo local, usa `front/.env.development` con `VITE_API_URL=http://loc
 ```env
 PORT=10000
 API_KEY=mi_clave_segura
-ALLOWED_ORIGIN=https://alfredoma12.github.io
+ALLOWED_ORIGINS=https://alfredoma12.github.io,https://alerta-7k4.pages.dev
+DATABASE_URL=postgresql://usuario:password@host:5432/database
+PGSSLMODE=require
 ```
 
 4. Usa la URL publica entregada por Render (ejemplo: `https://tu-api-fjlx.onrender.com`).
@@ -150,6 +157,22 @@ Ejemplo:
 
 `GET http://localhost:3001/api/vehicles/AB1234`
 
+### GET /search
+
+Busca registros para el frontend.
+
+Query params opcional:
+
+- `q`: texto para buscar por patente, marca, modelo, color o descripcion
+
+Headers:
+
+- `x-api-key: tu_api_key_segura`
+
+Ejemplo:
+
+`GET http://localhost:3001/search?q=AB12`
+
 ## Ejemplo fetch desde frontend
 
 ```js
@@ -192,7 +215,7 @@ async function buscarVehiculo(patente) {
 
 - Se mantiene rate limit de 100 requests por IP cada 15 minutos.
 - `x-api-key` es obligatoria en todos los endpoints.
-- CORS solo permite `ALLOWED_ORIGIN` (sin wildcard).
+- CORS solo permite los dominios configurados en `ALLOWED_ORIGINS` (sin wildcard).
 - Todas las respuestas de error se devuelven en JSON.
 
 Nota: cualquier variable `VITE_*` del frontend queda visible en el cliente. Usa una API key de bajo privilegio para frontend y rota esa clave cuando sea necesario.

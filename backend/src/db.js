@@ -1,33 +1,41 @@
-const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 
-const dbPath = path.resolve(__dirname, '..', 'database.db');
-const db = new sqlite3.Database(dbPath);
+const databaseUrl = process.env.DATABASE_URL;
 
-function initDatabase() {
+if (!databaseUrl || !databaseUrl.trim()) {
+  throw new Error('Falta DATABASE_URL en variables de entorno.');
+}
+
+const shouldUseSsl = (process.env.PGSSLMODE || '').toLowerCase() !== 'disable';
+
+const pool = new Pool({
+  connectionString: databaseUrl,
+  ssl: shouldUseSsl ? { rejectUnauthorized: false } : false,
+});
+
+async function initDatabase() {
   const createVehiclesTableQuery = `
     CREATE TABLE IF NOT EXISTS vehicles (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      patente TEXT NOT NULL,
+      id BIGSERIAL PRIMARY KEY,
+      patente VARCHAR(10) NOT NULL,
       marca TEXT,
       modelo TEXT,
       color TEXT,
-      descripcion TEXT
+      descripcion TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
 
-  return new Promise((resolve, reject) => {
-    db.run(createVehiclesTableQuery, (error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve();
-    });
-  });
+  const createVehiclesPatenteIndexQuery = `
+    CREATE INDEX IF NOT EXISTS idx_vehicles_patente
+    ON vehicles (UPPER(patente))
+  `;
+
+  await pool.query(createVehiclesTableQuery);
+  await pool.query(createVehiclesPatenteIndexQuery);
 }
 
 module.exports = {
-  db,
+  pool,
   initDatabase,
 };
