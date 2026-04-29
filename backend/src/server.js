@@ -8,7 +8,10 @@ const { db, initDatabase } = require('./db');
 const app = express();
 const port = Number(process.env.PORT || 3001);
 const apiKey = process.env.API_KEY;
-const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://alfredoma12.github.io';
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.ALLOWED_ORIGIN || 'https://alfredoma12.github.io')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
 
 if (!apiKey || !apiKey.trim()) {
   throw new Error('Falta API_KEY en variables de entorno.');
@@ -24,7 +27,7 @@ app.use(
         return;
       }
 
-      if (origin === allowedOrigin) {
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
         return;
       }
@@ -134,6 +137,52 @@ app.get('/api/vehicles/:patente', apiKeyMiddleware, (req, res) => {
   });
 });
 
+app.get('/search', apiKeyMiddleware, (req, res) => {
+  const q = (req.query.q || '').toString().trim();
+  const like = `%${q}%`;
+
+  const query = q
+    ? `
+      SELECT id, patente, marca, modelo, color, descripcion
+      FROM vehicles
+      WHERE patente LIKE ?
+        OR IFNULL(marca, '') LIKE ?
+        OR IFNULL(modelo, '') LIKE ?
+        OR IFNULL(color, '') LIKE ?
+        OR IFNULL(descripcion, '') LIKE ?
+      ORDER BY id DESC
+      LIMIT 100
+    `
+    : `
+      SELECT id, patente, marca, modelo, color, descripcion
+      FROM vehicles
+      ORDER BY id DESC
+      LIMIT 100
+    `;
+
+  const params = q ? [like, like, like, like, like] : [];
+
+  db.all(query, params, (error, rows) => {
+    if (error) {
+      res.status(500).json({ error: 'Error de base de datos al buscar registros.' });
+      return;
+    }
+
+    const items = (rows || []).map((row) => ({
+      id: row.id,
+      type: 'VEHICLE',
+      name: [row.marca, row.modelo].filter(Boolean).join(' ').trim() || null,
+      plate: row.patente,
+      description: row.descripcion || 'Sin descripcion',
+      status: 'APPROVED',
+      createdAt: new Date().toISOString(),
+      evidence: [],
+    }));
+
+    res.json({ items });
+  });
+});
+
 app.use((req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada.' });
 });
@@ -155,7 +204,7 @@ async function startServer() {
       // eslint-disable-next-line no-console
       console.log(`Servidor escuchando en http://localhost:${port}`);
       // eslint-disable-next-line no-console
-      console.log(`CORS permitido para: ${allowedOrigin}`);
+      console.log(`CORS permitido para: ${allowedOrigins.join(', ')}`);
     });
   } catch (error) {
     // eslint-disable-next-line no-console

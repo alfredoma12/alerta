@@ -20,7 +20,7 @@ GitHub Pages solo sirve archivos estaticos. En tu caso:
 ```env
 PORT=3001
 API_KEY=mi_clave_segura
-ALLOWED_ORIGIN=https://alfredoma12.github.io
+ALLOWED_ORIGINS=https://alfredoma12.github.io,https://alerta-7k4.pages.dev
 ```
 
 ### Frontend local (`front/.env.development`)
@@ -59,7 +59,7 @@ npm run dev
 
 - En Render crea un Web Service desde `backend`
 - Start command: `npm start`
-- Variables: `PORT`, `API_KEY`, `ALLOWED_ORIGIN=https://alfredoma12.github.io`
+- Variables: `PORT`, `API_KEY`, `ALLOWED_ORIGINS=https://alfredoma12.github.io,https://alerta-7k4.pages.dev`
 - URL publica: `https://tu-api-fjlx.onrender.com`
 
 4. Pegar la URL de Render en `front/.env.production`.
