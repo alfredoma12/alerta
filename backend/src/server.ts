@@ -6,22 +6,24 @@ import {
   getAllReports,
   initializeStore,
   normalizeLicensePlate,
+  searchReports,
 } from './store';
 import { AlertInput, CreateReportInput } from './types';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-// Allow frontend requests from any origin for now.
+// Allow frontend requests from any origin.
 app.use(cors());
 app.use(express.json());
 
-// Log each incoming request to keep local debugging simple.
+// Log every incoming request for easier debugging.
 app.use((req: Request, _res: Response, next) => {
   console.log(`${req.method} ${req.originalUrl}`);
   next();
 });
 
+// Helper: validates that a value is a non-empty string.
 function getRequiredString(
   value: unknown,
   fieldName: string,
@@ -32,13 +34,73 @@ function getRequiredString(
       message: `${fieldName} is required and must be a non-empty string.`,
     };
   }
-
   return { ok: true, value: value.trim() };
 }
+
+// ─── Health check ─────────────────────────────────────────────────────────────
 
 app.get('/', (_req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
+
+// ─── GET /search?q=ABC123 ──────────────────────────────────────────────────────
+// Called by the frontend to populate the report list.
+// Returns { items: [...] } in the shape the frontend mapApiReport function expects.
+app.get('/search', async (req: Request, res: Response) => {
+  const rawPlate = req.query.plate;
+
+  // Primary mode: ?plate=ABC123
+  if (typeof rawPlate !== 'undefined') {
+    if (typeof rawPlate !== 'string' || !rawPlate.trim()) {
+      res.status(400).json({ error: 'plate is required and must be a non-empty string.' });
+      return;
+    }
+
+    const normalizedPlate = normalizeLicensePlate(rawPlate);
+    console.log(`[search] plate="${normalizedPlate}"`);
+
+    try {
+      const matches = await findReportsByLicensePlate(rawPlate);
+
+      if (matches.length === 0) {
+        res.status(404).json({ error: `No report found for plate ${normalizedPlate}.` });
+        return;
+      }
+
+      // Return one report for direct plate lookup.
+      res.json(matches[0]);
+      return;
+    } catch (error) {
+      console.error('Failed to search by plate:', error);
+      res.status(500).json({ error: 'Could not search reports.' });
+      return;
+    }
+  }
+
+  // Compatibility mode: ?q=... or no query, returning { items: [...] }.
+  const rawQuery = typeof req.query.q === 'string' ? req.query.q : '';
+  console.log(`[search] q="${rawQuery}"`);
+
+  try {
+    const reports = await searchReports(rawQuery);
+    const items = reports.map((r, index) => ({
+      id: index + 1,
+      type: 'VEHICLE' as const,
+      name: null,
+      plate: r.licensePlate,
+      description: r.description,
+      status: 'APPROVED' as const,
+      createdAt: r.date,
+      evidence: [],
+    }));
+    res.json({ items });
+  } catch (error) {
+    console.error('Failed to search reports:', error);
+    res.status(500).json({ error: 'Could not search reports.' });
+  }
+});
+
+// ─── GET /reports ─────────────────────────────────────────────────────────────
 
 app.get('/reports', async (_req: Request, res: Response) => {
   try {
@@ -50,32 +112,22 @@ app.get('/reports', async (_req: Request, res: Response) => {
   }
 });
 
+// ─── POST /reports ────────────────────────────────────────────────────────────
+
 app.post('/reports', async (req: Request, res: Response) => {
   const { licensePlate, description, location, contact } = req.body as Partial<CreateReportInput>;
 
   const licensePlateResult = getRequiredString(licensePlate, 'licensePlate');
-  if (!licensePlateResult.ok) {
-    res.status(400).json({ error: licensePlateResult.message });
-    return;
-  }
+  if (!licensePlateResult.ok) { res.status(400).json({ error: licensePlateResult.message }); return; }
 
   const descriptionResult = getRequiredString(description, 'description');
-  if (!descriptionResult.ok) {
-    res.status(400).json({ error: descriptionResult.message });
-    return;
-  }
+  if (!descriptionResult.ok) { res.status(400).json({ error: descriptionResult.message }); return; }
 
   const locationResult = getRequiredString(location, 'location');
-  if (!locationResult.ok) {
-    res.status(400).json({ error: locationResult.message });
-    return;
-  }
+  if (!locationResult.ok) { res.status(400).json({ error: locationResult.message }); return; }
 
   const contactResult = getRequiredString(contact, 'contact');
-  if (!contactResult.ok) {
-    res.status(400).json({ error: contactResult.message });
-    return;
-  }
+  if (!contactResult.ok) { res.status(400).json({ error: contactResult.message }); return; }
 
   try {
     const report = await createReport({
@@ -84,7 +136,6 @@ app.post('/reports', async (req: Request, res: Response) => {
       location: locationResult.value,
       contact: contactResult.value,
     });
-
     res.status(201).json(report);
   } catch (error) {
     console.error('Failed to create report:', error);
@@ -92,18 +143,17 @@ app.post('/reports', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/reports/:licensePlate', async (req: Request, res: Response) => {
-  const rawLicensePlate = req.params.licensePlate;
-  const licensePlate = Array.isArray(rawLicensePlate) ? rawLicensePlate[0] : rawLicensePlate;
+// ─── GET /reports/:licensePlate ───────────────────────────────────────────────
 
-  const licensePlateResult = getRequiredString(licensePlate, 'licensePlate');
-  if (!licensePlateResult.ok) {
-    res.status(400).json({ error: licensePlateResult.message });
-    return;
-  }
+app.get('/reports/:licensePlate', async (req: Request, res: Response) => {
+  const raw = req.params.licensePlate;
+  const licensePlate = Array.isArray(raw) ? raw[0] : raw;
+
+  const result = getRequiredString(licensePlate, 'licensePlate');
+  if (!result.ok) { res.status(400).json({ error: result.message }); return; }
 
   try {
-    const reports = await findReportsByLicensePlate(licensePlateResult.value);
+    const reports = await findReportsByLicensePlate(result.value);
     res.json(reports);
   } catch (error) {
     console.error('Failed to search reports:', error);
@@ -111,39 +161,31 @@ app.get('/reports/:licensePlate', async (req: Request, res: Response) => {
   }
 });
 
+// ─── POST /alerts ─────────────────────────────────────────────────────────────
+
 app.post('/alerts', async (req: Request, res: Response) => {
   const { licensePlate, seenLocation } = req.body as Partial<AlertInput>;
 
-  const licensePlateResult = getRequiredString(licensePlate, 'licensePlate');
-  if (!licensePlateResult.ok) {
-    res.status(400).json({ error: licensePlateResult.message });
-    return;
-  }
+  const plateResult = getRequiredString(licensePlate, 'licensePlate');
+  if (!plateResult.ok) { res.status(400).json({ error: plateResult.message }); return; }
 
-  const seenLocationResult = getRequiredString(seenLocation, 'seenLocation');
-  if (!seenLocationResult.ok) {
-    res.status(400).json({ error: seenLocationResult.message });
-    return;
-  }
+  const locationResult = getRequiredString(seenLocation, 'seenLocation');
+  if (!locationResult.ok) { res.status(400).json({ error: locationResult.message }); return; }
 
   try {
-    const matchingReports = await findReportsByLicensePlate(licensePlateResult.value);
+    const matchingReports = await findReportsByLicensePlate(plateResult.value);
 
     if (matchingReports.length === 0) {
-      res.json({
-        message: `No report found for plate ${normalizeLicensePlate(licensePlateResult.value)}.`,
-      });
+      res.json({ message: `No report found for plate ${normalizeLicensePlate(plateResult.value)}.` });
       return;
     }
 
-    console.log(
-      `ALERT: stolen car spotted | plate=${normalizeLicensePlate(licensePlateResult.value)} | seenLocation=${seenLocationResult.value} | matches=${matchingReports.length}`,
-    );
+    console.log(`ALERT: stolen car spotted | plate=${normalizeLicensePlate(plateResult.value)} | seenLocation=${locationResult.value} | matches=${matchingReports.length}`);
 
     res.json({
       message: 'Alert simulated successfully.',
-      licensePlate: normalizeLicensePlate(licensePlateResult.value),
-      seenLocation: seenLocationResult.value,
+      licensePlate: normalizeLicensePlate(plateResult.value),
+      seenLocation: locationResult.value,
       matchesFound: matchingReports.length,
       reports: matchingReports,
     });
@@ -153,25 +195,20 @@ app.post('/alerts', async (req: Request, res: Response) => {
   }
 });
 
+// ─── 404 catch-all ────────────────────────────────────────────────────────────
+
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found.' });
 });
 
+// ─── Start server ─────────────────────────────────────────────────────────────
+
 async function startServer(): Promise<void> {
   await initializeStore();
-
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Backend running on port ${PORT}`);
-    console.log('Routes available:');
-    console.log('  GET  /');
-    console.log('  GET  /reports');
-    console.log('  POST /reports');
-    console.log('  GET  /reports/:licensePlate');
-    console.log('  POST /alerts');
+    console.log('Routes: GET / | GET /search | GET /reports | POST /reports | GET /reports/:plate | POST /alerts');
   });
 }
 
-startServer().catch((error) => {
-  console.error('Failed to start server:', error);
-  process.exit(1);
-});
+startServer().catch((error) => { console.error('Failed to start server:', error); process.exit(1); });

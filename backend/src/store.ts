@@ -79,6 +79,26 @@ export async function getAllReports(): Promise<Report[]> {
   return readReports();
 }
 
+// Returns reports whose plate, description or location contains the query.
+// An empty query returns every report.
+export async function searchReports(query: string): Promise<Report[]> {
+  const reports = await readReports();
+
+  if (!query.trim()) {
+    return reports;
+  }
+
+  const normalizedQuery = normalizeLicensePlate(query);
+  const lowerQuery = query.trim().toLowerCase();
+
+  return reports.filter(
+    (r) =>
+      r.licensePlate.includes(normalizedQuery) ||
+      r.description.toLowerCase().includes(lowerQuery) ||
+      r.location.toLowerCase().includes(lowerQuery),
+  );
+}
+
 export async function initializeStore(): Promise<void> {
   await ensureReportsFile();
 }
