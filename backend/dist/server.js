@@ -7,7 +7,7 @@ const cors_1 = __importDefault(require("cors"));
 const express_1 = __importDefault(require("express"));
 const store_1 = require("./store");
 const app = (0, express_1.default)();
-const port = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.PORT) || 3000;
 // Allow frontend requests from any origin for now.
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
@@ -130,8 +130,8 @@ app.use((_req, res) => {
 });
 async function startServer() {
     await (0, store_1.initializeStore)();
-    app.listen(port, () => {
-        console.log(`Backend running on http://localhost:${port}`);
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Backend running on port ${PORT}`);
     });
 }
 startServer().catch((error) => {

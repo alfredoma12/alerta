@@ -10,7 +10,7 @@ import {
 import { AlertInput, CreateReportInput } from './types';
 
 const app = express();
-const port = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.PORT) || 3000;
 
 // Allow frontend requests from any origin for now.
 app.use(cors());
@@ -160,8 +160,8 @@ app.use((_req: Request, res: Response) => {
 async function startServer(): Promise<void> {
   await initializeStore();
 
-  app.listen(port, () => {
-    console.log(`Backend running on http://localhost:${port}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Backend running on port ${PORT}`);
   });
 }
 
