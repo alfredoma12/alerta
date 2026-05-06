@@ -21,8 +21,9 @@ const verificationMeta = {
 
 export default function ReportCard({ report, onVote }: ReportCardProps) {
   const cat = getCategoryMeta(report.category)
-  const status = statusMeta[report.status]
-  const verificationState = report.verificationState || 'unverified'
+  // Published reports should be displayed immediately as verified.
+  const status = statusMeta.verified
+  const verificationState = 'community_verified'
 
   return (
     <article className="group flex gap-4 p-4 rounded-xl border border-border bg-surface hover:bg-surface-2 transition-all duration-200">
