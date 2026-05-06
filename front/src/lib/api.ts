@@ -1,8 +1,8 @@
 import axios from 'axios'
 
-const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const API = 'https://tuesday-reproach-crestless.ngrok-free.dev'
 
 export const api = axios.create({
-  baseURL: apiBaseUrl,
+  baseURL: API,
 })
 

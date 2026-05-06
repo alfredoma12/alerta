@@ -6,7 +6,7 @@ import { CATEGORIES, REGIONS } from '../lib/mock-data'
 interface ReportModalProps {
   open: boolean
   onClose: () => void
-  onSubmit: (data: ReportFormData) => void
+  onSubmit: (data: ReportFormData) => void | Promise<void>
 }
 
 const EMPTY: ReportFormData = {
@@ -55,7 +55,7 @@ export default function ReportModal({ open, onClose, onSubmit }: ReportModalProp
   async function handleSubmit() {
     setLoading(true)
     await new Promise((r) => setTimeout(r, 900))
-    onSubmit(form)
+    await onSubmit(form)
     setLoading(false)
     setDone(true)
   }
@@ -109,7 +109,7 @@ export default function ReportModal({ open, onClose, onSubmit }: ReportModalProp
                 <Check className="w-7 h-7 text-green" />
               </div>
               <h3 className="font-heading font-bold text-foreground text-lg mb-2">¡Denuncia enviada!</h3>
-              <p className="text-sm text-foreground-2">Tu reporte fue publicado y estará visible una vez revisado.</p>
+              <p className="text-sm text-foreground-2">Tu reporte fue publicado y ya está visible en la plataforma.</p>
             </div>
           ) : step === 0 ? (
             <div>

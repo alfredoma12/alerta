@@ -26,7 +26,7 @@ export default function App() {
     search,
     setSearch,
     vote,
-    addReport,
+    submitReport,
     stats,
     zones,
     topAccounts,
@@ -35,34 +35,13 @@ export default function App() {
   } = useReports()
   const { toasts, addToast, removeToast } = useToast()
 
-  function handleSubmit(data: ReportFormData) {
-    const isVehicle = data.mode === 'vehicle'
-    const title = data.title.trim() || (isVehicle ? `Vehiculo reportado ${data.plate}` : `Estafa reportada ${data.rut}`)
-    const location = data.location.trim() || (isVehicle ? `Patente ${data.plate}` : `RUT ${data.rut}`)
-    const evidence = [data.evidence, ...data.evidenceLinks.split(',').map((v) => v.trim())].filter(Boolean)
-
-    addReport({
-      title,
-      description: data.description,
-      category: isVehicle ? 'vehiculo_robado' : 'estafa',
-      location,
-      region: data.region,
-      isAnonymous: data.isAnonymous,
-      evidence,
-      plate: isVehicle ? data.plate : undefined,
-      brand: isVehicle ? data.brand : undefined,
-      model: isVehicle ? data.model : undefined,
-      color: isVehicle ? data.color : undefined,
-      year: isVehicle ? data.year : undefined,
-      chassisNumber: isVehicle ? data.chassisNumber : undefined,
-      scamPersonName: !isVehicle ? data.personName : undefined,
-      scamRut: !isVehicle ? data.rut : undefined,
-      scamAlias: !isVehicle ? data.alias : undefined,
-      scamType: !isVehicle ? data.scamType : undefined,
-      verificationState: 'unverified',
-      flagsCount: 0,
-    })
-    addToast({ type: 'success', title: 'Denuncia enviada', message: 'Tu reporte fue publicado y está en revisión.' })
+  async function handleSubmit(data: ReportFormData) {
+    try {
+      await submitReport(data)
+      addToast({ type: 'success', title: 'Denuncia enviada', message: 'Tu reporte fue publicado correctamente.' })
+    } catch {
+      addToast({ type: 'error', title: 'No se pudo publicar', message: 'Intenta nuevamente en unos segundos.' })
+    }
   }
 
   return (
