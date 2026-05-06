@@ -2,7 +2,6 @@ import cors from 'cors';
 import express, { Request, Response } from 'express';
 import {
   createReport,
-  findReportsByLicensePlate,
   getAllReports,
   getReportByPlate,
   initializeStore,

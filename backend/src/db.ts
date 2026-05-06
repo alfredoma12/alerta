@@ -10,18 +10,24 @@ export function getDatabaseFilePath(): string {
 }
 
 export function initializeDatabase(): void {
-  console.log(`[db] Using SQLite file: ${databaseFilePath}`);
+  try {
+    console.log(`[db] Using SQLite file: ${databaseFilePath}`);
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS reports (
-      id TEXT PRIMARY KEY,
-      licensePlate TEXT NOT NULL,
-      description TEXT NOT NULL,
-      location TEXT NOT NULL,
-      contact TEXT,
-      date TEXT NOT NULL
-    )
-  `);
+    db.pragma('journal_mode = WAL');
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS reports (
+        id TEXT PRIMARY KEY,
+        licensePlate TEXT NOT NULL,
+        description TEXT NOT NULL,
+        location TEXT NOT NULL,
+        contact TEXT,
+        date TEXT NOT NULL
+      )
+    `);
 
-  console.log('[db] reports table is ready');
+    console.log('[db] reports table is ready');
+  } catch (error) {
+    console.error('[db] Failed to initialize database:', error);
+    throw error;
+  }
 }
