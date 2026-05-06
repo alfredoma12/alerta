@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import type { ReportFormData, SearchMode, Stats } from '../lib/ui-types'
+import type { ReportFormData, Stats } from '../lib/ui-types'
 import { api } from '../lib/api'
 
 export interface PersistedReport {
@@ -32,8 +32,8 @@ function buildStats(items: PersistedReport[]): Stats {
 
 export function useReports() {
   const [reports, setReports] = useState<PersistedReport[]>([])
-  const [searchMode, setSearchMode] = useState<SearchMode>('vehicle')
-  const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -59,7 +59,7 @@ export function useReports() {
 
   const submitReport = useCallback(
     async (data: ReportFormData) => {
-      const licensePlate = data.plate.trim() || data.rut.trim() || 'SIN-PLACA'
+      const licensePlate = data.plate.trim() || 'SIN-PLACA'
 
       await api.post('/reports', {
         licensePlate,
@@ -73,25 +73,24 @@ export function useReports() {
     [fetchReports],
   )
 
+  const runSearch = useCallback(() => {
+    setSearchQuery(searchInput.trim())
+  }, [searchInput])
+
   const searchMatches = (() => {
-    const query = search.trim()
+    const query = searchQuery.trim()
     if (!query) return []
 
     const normalizedQuery = normalizeIdentifier(query)
-
-    if (searchMode === 'vehicle') {
-      return reports.filter((report) => normalizeIdentifier(report.licensePlate).includes(normalizedQuery))
-    }
-
     return reports.filter((report) => normalizeIdentifier(report.licensePlate).includes(normalizedQuery))
   })()
 
   return {
     reports,
-    search,
-    setSearch,
-    searchMode,
-    setSearchMode,
+    searchInput,
+    setSearchInput,
+    searchQuery,
+    runSearch,
     searchMatches,
     submitReport,
     stats: buildStats(reports),

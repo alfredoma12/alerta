@@ -1,14 +1,13 @@
-import { AlertTriangle, Search, CarFront, UserRoundSearch, ShieldAlert, ArrowRight } from 'lucide-react'
+import { AlertTriangle, Search, CarFront, ShieldAlert } from 'lucide-react'
 import type { PersistedReport } from '../hooks/use-reports'
-import type { SearchMode } from '../lib/ui-types'
 
 interface HeroProps {
   onDenunciar: () => void
   todayCount: number
-  search: string
-  mode: SearchMode
+  searchInput: string
+  searchQuery: string
   onSearchChange: (value: string) => void
-  onModeChange: (value: SearchMode) => void
+  onSearchSubmit: () => void
   searchMatches: PersistedReport[]
 }
 
@@ -21,10 +20,10 @@ const features = [
 export default function Hero({
   onDenunciar,
   todayCount,
-  search,
-  mode,
+  searchInput,
+  searchQuery,
   onSearchChange,
-  onModeChange,
+  onSearchSubmit,
   searchMatches,
 }: HeroProps) {
   return (
@@ -44,50 +43,45 @@ export default function Hero({
         </div>
 
         <h1 className="font-heading font-bold text-4xl sm:text-5xl md:text-6xl text-foreground leading-tight mb-6">
-          Busca primero.{' '}
-          <span className="text-primary">Reporta con responsabilidad.</span>
+          Plataforma ciudadana de{' '}
+          <span className="text-primary">vehiculos robados.</span>
         </h1>
 
         <p className="text-foreground-2 text-lg sm:text-xl max-w-3xl mx-auto mb-8">
-          Consulta patentes, RUT o nombres en segundos y comparte reportes para fortalecer la seguridad ciudadana sin afirmar culpabilidad como hecho.
+          Busca por patente para verificar si un vehiculo fue reportado por robo y publica tu denuncia para alertar a la comunidad.
         </p>
 
         <div className="max-w-3xl mx-auto rounded-2xl border border-border bg-surface/90 backdrop-blur-sm p-4 sm:p-5 mb-7 shadow-xl">
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <button
-              onClick={() => onModeChange('vehicle')}
-              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                mode === 'vehicle' ? 'bg-primary text-white' : 'bg-surface-2 text-foreground-2 hover:text-foreground'
-              }`}
-            >
-              <CarFront className="w-4 h-4" /> Buscar patente
-            </button>
-            <button
-              onClick={() => onModeChange('scam')}
-              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                mode === 'scam' ? 'bg-primary text-white' : 'bg-surface-2 text-foreground-2 hover:text-foreground'
-              }`}
-            >
-              <UserRoundSearch className="w-4 h-4" /> Buscar RUT
-            </button>
+          <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-2 text-foreground-2 text-sm mb-3">
+            <CarFront className="w-4 h-4" /> Búsqueda por patente
           </div>
 
-          <div className="relative">
+          <div className="relative mb-3">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
             <input
-              value={search}
+              value={searchInput}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={mode === 'vehicle' ? 'Ingresa patente (ej: BBDF32)' : 'Ingresa RUT (ej: 123456789)'}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearchSubmit()
+              }}
+              placeholder="Ingresa patente (ej: BBDF32)"
               className="w-full pl-12 pr-4 py-4 rounded-xl bg-background border border-border text-base text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
 
+          <button
+            onClick={onSearchSubmit}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-medium transition-all"
+          >
+            Buscar
+          </button>
+
           <div className="mt-3 text-left">
-            {search.trim() === '' ? (
-              <p className="text-xs text-muted">Busca por patente o RUT para validar si ya existe una denuncia.</p>
+            {searchQuery.trim() === '' ? (
+              <p className="text-xs text-muted">Ingresa una patente y presiona Buscar para ver resultados.</p>
             ) : searchMatches.length > 0 ? (
               <div className="rounded-xl border border-green/30 bg-green/10 p-3 space-y-3">
-                <p className="text-xs text-green mb-1">{searchMatches.length} registro(s) encontrado(s)</p>
+                <p className="text-xs text-green mb-1">Vehiculo reportado por robo: {searchMatches.length} registro(s)</p>
                 {searchMatches.map((match) => (
                   <article key={match.id} className="rounded-lg border border-green/20 bg-black/10 p-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -121,7 +115,7 @@ export default function Hero({
               </div>
             ) : (
               <div className="rounded-xl border border-amber/30 bg-amber/10 p-3">
-                <p className="text-xs text-amber mb-1">Sin coincidencias</p>
+                <p className="text-xs text-amber mb-1">No hay reportes de robo para esa patente</p>
                 <button onClick={onDenunciar} className="text-sm text-foreground underline underline-offset-4 hover:text-white transition-colors">
                   Crear denuncia ahora
                 </button>
@@ -150,13 +144,6 @@ export default function Hero({
             <AlertTriangle className="w-5 h-5" />
             Crear denuncia
           </button>
-          <a
-            href="#reports"
-            className="flex items-center gap-2 px-6 py-3 rounded-xl border border-border hover:border-foreground-2 text-foreground-2 hover:text-foreground text-base transition-all"
-          >
-            Ver reportes publicados
-            <ArrowRight className="w-4 h-4" />
-          </a>
         </div>
       </div>
     </section>

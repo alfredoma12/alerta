@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { X, AlertTriangle, ChevronRight, Check, Loader2 } from 'lucide-react'
-import type { ReportFormData, SearchMode } from '../lib/ui-types'
-import { CATEGORIES, REGIONS } from '../lib/mock-data'
+import type { ReportFormData } from '../lib/ui-types'
+import { REGIONS } from '../lib/mock-data'
 
 interface ReportModalProps {
   open: boolean
@@ -25,7 +25,7 @@ const EMPTY: ReportFormData = {
   scamType: '',
   title: '',
   description: '',
-  category: 'robo',
+  category: 'vehiculo_robado',
   location: '',
   region: 'Región Metropolitana',
   evidence: '',
@@ -33,7 +33,7 @@ const EMPTY: ReportFormData = {
   isAnonymous: false,
 }
 
-const STEPS = ['Tipo', 'Detalles', 'Confirmar']
+const STEPS = ['Detalles', 'Confirmar']
 
 export default function ReportModal({ open, onClose, onSubmit }: ReportModalProps) {
   const [step, setStep] = useState(0)
@@ -61,12 +61,13 @@ export default function ReportModal({ open, onClose, onSubmit }: ReportModalProp
   }
 
   const canNext =
-    step === 0 ? !!form.mode
-    : step === 1
-      ? form.mode === 'vehicle'
-        ? form.plate.trim().length >= 5 && form.brand.trim().length >= 2 && form.model.trim().length >= 2 && form.location.trim().length >= 3 && form.description.trim().length >= 20
-        : form.personName.trim().length >= 6 && form.rut.trim().length >= 8 && form.scamType.trim().length >= 4 && form.description.trim().length >= 20
-    : true
+    step === 0
+      ? form.plate.trim().length >= 5 &&
+        form.brand.trim().length >= 2 &&
+        form.model.trim().length >= 2 &&
+        form.location.trim().length >= 3 &&
+        form.description.trim().length >= 20
+      : true
 
   return (
     <div
@@ -77,7 +78,7 @@ export default function ReportModal({ open, onClose, onSubmit }: ReportModalProp
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-primary" />
-            <span className="font-heading font-semibold text-foreground">Nueva denuncia</span>
+            <span className="font-heading font-semibold text-foreground">Nueva denuncia de vehículo robado</span>
           </div>
           <button onClick={handleClose} className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-surface-2 transition-all">
             <X className="w-4 h-4" />
@@ -112,140 +113,70 @@ export default function ReportModal({ open, onClose, onSubmit }: ReportModalProp
               <p className="text-sm text-foreground-2">Tu reporte fue publicado y ya está visible en la plataforma.</p>
             </div>
           ) : step === 0 ? (
-            <div>
-              <p className="text-sm text-foreground-2 mb-4">Selecciona el modulo de denuncia:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {[
-                  { value: 'vehicle', label: 'Vehiculo robado', desc: 'Patente, marca, modelo y ubicacion del robo' },
-                  { value: 'scam', label: 'Estafa a persona', desc: 'Nombre, RUT, alias y tipo de estafa' },
-                ].map((item) => (
-                  <button
-                    key={item.value}
-                    onClick={() => {
-                      const mode = item.value as SearchMode
-                      set('mode', mode)
-                      set('category', mode === 'vehicle' ? 'vehiculo_robado' : 'estafa')
-                    }}
-                    className={`p-3 rounded-xl text-left border transition-all ${
-                      form.mode === item.value ? 'border-primary bg-primary/10' : 'border-border text-foreground-2 hover:border-foreground-2 bg-surface-2'
-                    }`}
-                  >
-                    <p className="text-sm font-medium text-foreground">{item.label}</p>
-                    <p className="text-xs text-muted mt-1">{item.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : step === 1 ? (
             <div className="flex flex-col gap-3">
-              {form.mode === 'vehicle' ? (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-foreground-2 mb-1.5">Patente <span className="text-primary">*</span></label>
-                      <input type="text" value={form.plate} onChange={(e) => set('plate', e.target.value.toUpperCase())}
-                        placeholder="Ej: BBDF32"
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-foreground-2 mb-1.5">Ano</label>
-                      <input type="text" value={form.year} onChange={(e) => set('year', e.target.value)}
-                        placeholder="Ej: 2019"
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs text-foreground-2 mb-1.5">Marca <span className="text-primary">*</span></label>
-                      <input type="text" value={form.brand} onChange={(e) => set('brand', e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-foreground-2 mb-1.5">Modelo <span className="text-primary">*</span></label>
-                      <input type="text" value={form.model} onChange={(e) => set('model', e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-foreground-2 mb-1.5">Color</label>
-                      <input type="text" value={form.color} onChange={(e) => set('color', e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-foreground-2 mb-1.5">Ubicacion del robo <span className="text-primary">*</span></label>
-                      <input type="text" value={form.location} onChange={(e) => set('location', e.target.value)}
-                        placeholder="Comuna, calle o referencia"
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-foreground-2 mb-1.5">Fecha del robo</label>
-                      <input type="date" value={form.theftDate} onChange={(e) => set('theftDate', e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-foreground-2 mb-1.5">N de chasis (opcional)</label>
-                      <input type="text" value={form.chassisNumber} onChange={(e) => set('chassisNumber', e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-foreground-2 mb-1.5">Recompensa (opcional)</label>
-                      <input type="text" value={form.reward} onChange={(e) => set('reward', e.target.value)}
-                        placeholder="Ej: $300.000"
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-foreground-2 mb-1.5">Descripcion detallada <span className="text-primary">*</span></label>
-                    <textarea value={form.description} onChange={(e) => set('description', e.target.value)}
-                      placeholder="Indica contexto, caracteristicas distintivas y fuentes de verificacion..." rows={3}
-                      className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all resize-none" />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-foreground-2 mb-1.5">Nombre completo <span className="text-primary">*</span></label>
-                      <input type="text" value={form.personName} onChange={(e) => set('personName', e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-foreground-2 mb-1.5">RUT <span className="text-primary">*</span></label>
-                      <input type="text" value={form.rut} onChange={(e) => set('rut', e.target.value)}
-                        placeholder="Ej: 12.345.678-9"
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-foreground-2 mb-1.5">Alias / username (opcional)</label>
-                      <input type="text" value={form.alias} onChange={(e) => set('alias', e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-foreground-2 mb-1.5">Tipo de estafa <span className="text-primary">*</span></label>
-                      <input type="text" value={form.scamType} onChange={(e) => set('scamType', e.target.value)}
-                        placeholder="Marketplace, transferencia, inversion..."
-                        className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-foreground-2 mb-1.5">Descripcion <span className="text-primary">*</span></label>
-                    <textarea value={form.description} onChange={(e) => set('description', e.target.value)}
-                      placeholder="Describe hechos reportados sin afirmar culpabilidad como sentencia..." rows={3}
-                      className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all resize-none" />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-foreground-2 mb-1.5">Evidencia (imagenes o links)</label>
-                    <input type="text" value={form.evidenceLinks} onChange={(e) => set('evidenceLinks', e.target.value)}
-                      placeholder="URL separadas por coma"
-                      className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
-                  </div>
-                </>
-              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-foreground-2 mb-1.5">Patente <span className="text-primary">*</span></label>
+                  <input type="text" value={form.plate} onChange={(e) => set('plate', e.target.value.toUpperCase())}
+                    placeholder="Ej: BBDF32"
+                    className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs text-foreground-2 mb-1.5">Ano</label>
+                  <input type="text" value={form.year} onChange={(e) => set('year', e.target.value)}
+                    placeholder="Ej: 2019"
+                    className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-foreground-2 mb-1.5">Marca <span className="text-primary">*</span></label>
+                  <input type="text" value={form.brand} onChange={(e) => set('brand', e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs text-foreground-2 mb-1.5">Modelo <span className="text-primary">*</span></label>
+                  <input type="text" value={form.model} onChange={(e) => set('model', e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs text-foreground-2 mb-1.5">Color</label>
+                  <input type="text" value={form.color} onChange={(e) => set('color', e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-foreground-2 mb-1.5">Ubicacion del robo <span className="text-primary">*</span></label>
+                  <input type="text" value={form.location} onChange={(e) => set('location', e.target.value)}
+                    placeholder="Comuna, calle o referencia"
+                    className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs text-foreground-2 mb-1.5">Fecha del robo</label>
+                  <input type="date" value={form.theftDate} onChange={(e) => set('theftDate', e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-foreground-2 mb-1.5">N de chasis (opcional)</label>
+                  <input type="text" value={form.chassisNumber} onChange={(e) => set('chassisNumber', e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs text-foreground-2 mb-1.5">Recompensa (opcional)</label>
+                  <input type="text" value={form.reward} onChange={(e) => set('reward', e.target.value)}
+                    placeholder="Ej: $300.000"
+                    className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-foreground-2 mb-1.5">Descripcion detallada <span className="text-primary">*</span></label>
+                <textarea value={form.description} onChange={(e) => set('description', e.target.value)}
+                  placeholder="Indica contexto, caracteristicas distintivas y fuentes de verificacion..." rows={3}
+                  className="w-full px-3 py-2.5 rounded-lg bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all resize-none" />
+              </div>
 
               <div>
                 <label className="block text-xs text-foreground-2 mb-1.5">Titulo publico <span className="text-primary">*</span></label>
@@ -280,8 +211,7 @@ export default function ReportModal({ open, onClose, onSubmit }: ReportModalProp
               <p className="text-sm text-foreground-2">Revisa los datos antes de publicar:</p>
               <div className="rounded-xl border border-border bg-surface-2 p-4 space-y-2 text-sm">
                 {[
-                  ['Modulo', form.mode === 'vehicle' ? 'Vehiculo robado' : 'Estafa a persona'],
-                  ['Categoría', CATEGORIES.find(c => c.value === form.category)?.label ?? form.category],
+                  ['Tipo', 'Vehiculo robado'],
                   ['Título', form.title],
                   ['Ubicacion', `${form.location || 'No informada'} - ${form.region}`],
                   ['Anónimo', form.isAnonymous ? 'Sí' : 'No'],
