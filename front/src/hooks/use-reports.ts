@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import type { ReportFormData, Stats } from '../lib/ui-types'
+import type { ReportFormData, SearchMode, Stats } from '../lib/ui-types'
 import { api } from '../lib/api'
 
 export interface PersistedReport {
@@ -9,6 +9,10 @@ export interface PersistedReport {
   location: string
   contact: string
   date: string
+}
+
+function normalizeIdentifier(value: string): string {
+  return value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
 }
 
 function buildStats(items: PersistedReport[]): Stats {
@@ -28,6 +32,8 @@ function buildStats(items: PersistedReport[]): Stats {
 
 export function useReports() {
   const [reports, setReports] = useState<PersistedReport[]>([])
+  const [searchMode, setSearchMode] = useState<SearchMode>('vehicle')
+  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -67,8 +73,30 @@ export function useReports() {
     [fetchReports],
   )
 
+  const instantResult = (() => {
+    const query = search.trim()
+    if (!query) return null
+
+    const normalizedQuery = normalizeIdentifier(query)
+
+    if (searchMode === 'vehicle') {
+      return (
+        reports.find((report) => normalizeIdentifier(report.licensePlate).includes(normalizedQuery)) || null
+      )
+    }
+
+    return (
+      reports.find((report) => normalizeIdentifier(report.licensePlate).includes(normalizedQuery)) || null
+    )
+  })()
+
   return {
     reports,
+    search,
+    setSearch,
+    searchMode,
+    setSearchMode,
+    instantResult,
     submitReport,
     stats: buildStats(reports),
     loading,

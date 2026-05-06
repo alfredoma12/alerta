@@ -13,6 +13,11 @@ export default function App() {
   const [modalOpen, setModalOpen] = useState(false)
   const {
     reports,
+    search,
+    setSearch,
+    searchMode,
+    setSearchMode,
+    instantResult,
     submitReport,
     stats,
     loading,
@@ -33,7 +38,15 @@ export default function App() {
     <>
       <NavbarNew onDenunciar={() => setModalOpen(true)} />
       <main>
-        <Hero onDenunciar={() => setModalOpen(true)} todayCount={stats.today} />
+        <Hero
+          onDenunciar={() => setModalOpen(true)}
+          todayCount={stats.today}
+          search={search}
+          mode={searchMode}
+          onSearchChange={setSearch}
+          onModeChange={setSearchMode}
+          instantResult={instantResult}
+        />
         <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-6">
           <div className="rounded-xl border border-amber/30 bg-amber/10 px-4 py-3 text-xs sm:text-sm text-amber">
             Esta plataforma no reemplaza denuncias oficiales. Contenido generado por usuarios e informacion no verificada.

@@ -1,8 +1,15 @@
-import { AlertTriangle, ShieldAlert, ArrowRight } from 'lucide-react'
+import { AlertTriangle, Search, CarFront, UserRoundSearch, ShieldAlert, ArrowRight } from 'lucide-react'
+import type { PersistedReport } from '../hooks/use-reports'
+import type { SearchMode } from '../lib/ui-types'
 
 interface HeroProps {
   onDenunciar: () => void
   todayCount: number
+  search: string
+  mode: SearchMode
+  onSearchChange: (value: string) => void
+  onModeChange: (value: SearchMode) => void
+  instantResult: PersistedReport | null
 }
 
 const features = [
@@ -11,7 +18,15 @@ const features = [
   { text: 'Esta plataforma no reemplaza denuncias oficiales' },
 ]
 
-export default function Hero({ onDenunciar, todayCount }: HeroProps) {
+export default function Hero({
+  onDenunciar,
+  todayCount,
+  search,
+  mode,
+  onSearchChange,
+  onModeChange,
+  instantResult,
+}: HeroProps) {
   return (
     <section id="inicio" className="relative pt-32 pb-20 px-4 sm:px-6 overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
@@ -37,11 +52,54 @@ export default function Hero({ onDenunciar, todayCount }: HeroProps) {
           Consulta patentes, RUT o nombres en segundos y comparte reportes para fortalecer la seguridad ciudadana sin afirmar culpabilidad como hecho.
         </p>
 
-        <div className="max-w-3xl mx-auto rounded-2xl border border-border bg-surface/90 backdrop-blur-sm p-5 mb-7 shadow-xl text-left">
-          <h3 className="font-heading font-semibold text-foreground text-lg mb-2">Publicación directa sin revisión manual</h3>
-          <p className="text-sm text-foreground-2">
-            Cada denuncia se guarda inmediatamente en SQLite y aparece de forma automática en el listado principal.
-          </p>
+        <div className="max-w-3xl mx-auto rounded-2xl border border-border bg-surface/90 backdrop-blur-sm p-4 sm:p-5 mb-7 shadow-xl">
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <button
+              onClick={() => onModeChange('vehicle')}
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                mode === 'vehicle' ? 'bg-primary text-white' : 'bg-surface-2 text-foreground-2 hover:text-foreground'
+              }`}
+            >
+              <CarFront className="w-4 h-4" /> Buscar patente
+            </button>
+            <button
+              onClick={() => onModeChange('scam')}
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                mode === 'scam' ? 'bg-primary text-white' : 'bg-surface-2 text-foreground-2 hover:text-foreground'
+              }`}
+            >
+              <UserRoundSearch className="w-4 h-4" /> Buscar RUT
+            </button>
+          </div>
+
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
+            <input
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder={mode === 'vehicle' ? 'Ingresa patente (ej: BBDF32)' : 'Ingresa RUT (ej: 123456789)'}
+              className="w-full pl-12 pr-4 py-4 rounded-xl bg-background border border-border text-base text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
+            />
+          </div>
+
+          <div className="mt-3 text-left">
+            {search.trim() === '' ? (
+              <p className="text-xs text-muted">Busca por patente o RUT para validar si ya existe una denuncia.</p>
+            ) : instantResult ? (
+              <div className="rounded-xl border border-green/30 bg-green/10 p-3">
+                <p className="text-xs text-green mb-1">Registro encontrado</p>
+                <p className="text-sm text-foreground font-medium">{instantResult.licensePlate}</p>
+                <p className="text-xs text-foreground-2 mt-1">{instantResult.description}</p>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-amber/30 bg-amber/10 p-3">
+                <p className="text-xs text-amber mb-1">Sin coincidencias</p>
+                <button onClick={onDenunciar} className="text-sm text-foreground underline underline-offset-4 hover:text-white transition-colors">
+                  Crear denuncia ahora
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <ul className="flex flex-wrap justify-center gap-3 mb-8">
