@@ -3,6 +3,7 @@ import express, { Request, Response } from 'express';
 import {
   createReport,
   findReportsByLicensePlate,
+  getReportsFilePath,
   getReports,
   initializeStore,
   normalizeLicensePlate,
@@ -240,6 +241,7 @@ async function startServer(): Promise<void> {
   await initializeStore();
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Backend running on port ${PORT}`);
+    console.log(`[store] Active reports file: ${getReportsFilePath()}`);
     console.log('Routes: GET / | GET /test | GET /search | GET /reports | POST /reports | GET /reports/:licensePlate | GET /reports/matricula/:matricula | POST /alerts | POST /alertas');
   });
 }

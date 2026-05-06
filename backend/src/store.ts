@@ -2,8 +2,32 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { CreateReportInput, Report } from './types';
 
-const dataDirectory = path.join(__dirname, '..', 'data');
+const dataDirectory = path.join(process.cwd(), 'data');
 const reportsFilePath = path.join(dataDirectory, 'reports.json');
+let storeLock: Promise<void> = Promise.resolve();
+
+console.log(`[store] Using reports file: ${reportsFilePath}`);
+
+async function withStoreLock<T>(operation: () => Promise<T>): Promise<T> {
+  const previous = storeLock;
+  let release: () => void = () => {};
+
+  storeLock = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  await previous;
+
+  try {
+    return await operation();
+  } finally {
+    release();
+  }
+}
+
+export function getReportsFilePath(): string {
+  return reportsFilePath;
+}
 
 async function ensureReportsFile(): Promise<void> {
   await fs.mkdir(dataDirectory, { recursive: true });
@@ -12,6 +36,7 @@ async function ensureReportsFile(): Promise<void> {
     await fs.access(reportsFilePath);
   } catch {
     await fs.writeFile(reportsFilePath, '[]', 'utf-8');
+    console.log(`[store] Created missing storage file: ${reportsFilePath}`);
   }
 }
 
@@ -21,11 +46,13 @@ export function normalizeLicensePlate(licensePlate: string): string {
 
 async function readReports(): Promise<Report[]> {
   await ensureReportsFile();
+  console.log(`[store] Reading reports from: ${reportsFilePath}`);
 
   try {
     const fileContent = await fs.readFile(reportsFilePath, 'utf-8');
 
     if (!fileContent.trim()) {
+      console.warn('[store] reports.json was empty. Falling back to []');
       return [];
     }
 
@@ -64,25 +91,28 @@ async function readReports(): Promise<Report[]> {
 
 async function writeReports(reports: Report[]): Promise<void> {
   await ensureReportsFile();
+  console.log(`[store] Writing ${reports.length} reports to: ${reportsFilePath}`);
   await fs.writeFile(reportsFilePath, JSON.stringify(reports, null, 2), 'utf-8');
 }
 
 export async function createReport(input: CreateReportInput): Promise<Report> {
-  const reports = await readReports();
+  return withStoreLock(async () => {
+    const reports = await readReports();
 
-  const report: Report = {
-    id: crypto.randomUUID(),
-    licensePlate: normalizeLicensePlate(input.licensePlate),
-    description: input.description.trim(),
-    location: input.location.trim(),
-    contact: input.contact.trim(),
-    date: new Date().toISOString(),
-  };
+    const report: Report = {
+      id: crypto.randomUUID(),
+      licensePlate: normalizeLicensePlate(input.licensePlate),
+      description: input.description.trim(),
+      location: input.location.trim(),
+      contact: input.contact.trim(),
+      date: new Date().toISOString(),
+    };
 
-  reports.push(report);
-  await writeReports(reports);
+    reports.push(report);
+    await writeReports(reports);
 
-  return report;
+    return report;
+  });
 }
 
 export async function findReportsByLicensePlate(licensePlate: string): Promise<Report[]> {
