@@ -2,9 +2,6 @@ import { useState } from 'react'
 import NavbarNew from './components/NavbarNew'
 import Hero from './components/Hero'
 import StatsBar from './components/StatsBar'
-import Filters from './components/Filters'
-import ReportCard from './components/ReportCard'
-import Sidebar from './components/Sidebar'
 import ReportModal from './components/ReportModal'
 import ToastContainer from './components/ToastContainer'
 import FooterNew from './components/FooterNew'
@@ -16,20 +13,8 @@ export default function App() {
   const [modalOpen, setModalOpen] = useState(false)
   const {
     reports,
-    vehicleReports,
-    scamReports,
-    instantResult,
-    searchMode,
-    setSearchMode,
-    filter,
-    setFilter,
-    search,
-    setSearch,
-    vote,
     submitReport,
     stats,
-    zones,
-    topAccounts,
     loading,
     error,
   } = useReports()
@@ -48,15 +33,7 @@ export default function App() {
     <>
       <NavbarNew onDenunciar={() => setModalOpen(true)} />
       <main>
-        <Hero
-          onDenunciar={() => setModalOpen(true)}
-          todayCount={stats.today}
-          search={search}
-          mode={searchMode}
-          onSearchChange={setSearch}
-          onModeChange={setSearchMode}
-          instantResult={instantResult}
-        />
+        <Hero onDenunciar={() => setModalOpen(true)} todayCount={stats.today} />
         <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-6">
           <div className="rounded-xl border border-amber/30 bg-amber/10 px-4 py-3 text-xs sm:text-sm text-amber">
             Esta plataforma no reemplaza denuncias oficiales. Contenido generado por usuarios e informacion no verificada.
@@ -70,8 +47,8 @@ export default function App() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
               { step: '01', title: 'Reportas el incidente', desc: 'Completa el formulario con detalles de lo ocurrido. Puedes ser anónimo.' },
-              { step: '02', title: 'La comunidad vota', desc: 'Otros usuarios verifican y respaldan tu denuncia con votos.' },
-              { step: '03', title: 'Se genera alerta pública', desc: 'Las denuncias verificadas aparecen en el feed y el mapa de zonas activas.' },
+              { step: '02', title: 'Se guarda en SQLite', desc: 'La API guarda tu reporte de inmediato en la base de datos local.' },
+              { step: '03', title: 'Aparece al instante', desc: 'El listado se actualiza con los datos reales sin flujos de aprobación.' },
             ].map((item) => (
               <div key={item.step} className="relative p-6 rounded-2xl border border-border bg-surface hover:border-primary/30 hover:bg-surface-2 transition-all">
                 <span className="font-heading font-bold text-5xl text-white leading-none select-none">{item.step}</span>
@@ -81,65 +58,60 @@ export default function App() {
             ))}
           </div>
         </section>
-        <section id="feed" className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
+        <section id="reports" className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="font-heading font-bold text-xl sm:text-2xl text-foreground">Buscador y feed comunitario</h2>
-            <span className="text-sm text-muted">{reports.length} resultados</span>
+            <h2 className="font-heading font-bold text-xl sm:text-2xl text-foreground">Reportes publicados</h2>
+            <span className="text-sm text-muted">{reports.length} registros</span>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
-            <div className="flex flex-col gap-5">
-              <Filters filter={filter} search={search} onFilterChange={setFilter} onSearchChange={setSearch} />
-              {loading && (
-                <div className="rounded-xl border border-border bg-surface p-4 text-sm text-foreground-2">
-                  Cargando denuncias reales...
-                </div>
-              )}
-              {!loading && error && (
-                <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
-                  {error}
-                </div>
-              )}
-              {reports.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <p className="text-foreground-2 text-sm">No encontrado. Puedes crear una denuncia nueva ahora.</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-6">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-heading font-semibold text-foreground">Vehiculos robados</h3>
-                      <span className="text-xs text-muted">{vehicleReports.length} registros</span>
-                    </div>
-                    {vehicleReports.length === 0 ? (
-                      <div className="rounded-xl border border-border bg-surface p-4 text-sm text-foreground-2">
-                        Sin registros de vehiculos para este filtro.
-                      </div>
-                    ) : (
-                      vehicleReports.map((r) => <ReportCard key={r.id} report={r} onVote={vote} />)
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-heading font-semibold text-foreground">Estafas reportadas</h3>
-                      <span className="text-xs text-muted">{scamReports.length} registros</span>
-                    </div>
-                    {scamReports.length === 0 ? (
-                      <div className="rounded-xl border border-border bg-surface p-4 text-sm text-foreground-2">
-                        Sin registros de estafas para este filtro.
-                      </div>
-                    ) : (
-                      scamReports.map((r) => <ReportCard key={r.id} report={r} onVote={vote} />)
-                    )}
-                  </div>
-                </div>
-              )}
+
+          {loading && (
+            <div className="rounded-xl border border-border bg-surface p-4 text-sm text-foreground-2">
+              Cargando reportes...
             </div>
-            <div className="hidden lg:block">
-              <div className="sticky top-24">
-                <Sidebar zones={zones} accounts={topAccounts} onDenunciar={() => setModalOpen(true)} />
-              </div>
+          )}
+
+          {!loading && error && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+              {error}
             </div>
-          </div>
+          )}
+
+          {!loading && !error && reports.length === 0 && (
+            <div className="rounded-xl border border-border bg-surface p-6 text-sm text-foreground-2">
+              No hay reportes todavía. Crea el primero con el botón "Crear denuncia".
+            </div>
+          )}
+
+          {!loading && !error && reports.length > 0 && (
+            <div className="grid grid-cols-1 gap-4">
+              {reports.map((report) => (
+                <article key={report.id} className="rounded-xl border border-border bg-surface p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-sm">
+                    <div>
+                      <p className="text-muted text-xs">Patente</p>
+                      <p className="text-foreground font-medium">{report.licensePlate}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted text-xs">Descripción</p>
+                      <p className="text-foreground">{report.description}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted text-xs">Ubicación</p>
+                      <p className="text-foreground">{report.location}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted text-xs">Contacto</p>
+                      <p className="text-foreground">{report.contact}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted text-xs">Fecha</p>
+                      <p className="text-foreground">{new Date(report.date).toLocaleString()}</p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
       </main>
       <FooterNew />
