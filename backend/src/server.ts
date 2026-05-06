@@ -192,6 +192,12 @@ app.post('/reports', async (req: Request, res: Response) => {
 
   const reportType = type === 'SCAM' ? 'SCAM' : 'VEHICLE';
 
+  const licensePlateResult = getRequiredString(licensePlate, 'licensePlate');
+  if (!licensePlateResult.ok) {
+    res.status(400).json({ error: licensePlateResult.message });
+    return;
+  }
+
   const descriptionResult = getRequiredString(description, 'description');
   if (!descriptionResult.ok) { res.status(400).json({ error: descriptionResult.message }); return; }
 
@@ -199,9 +205,6 @@ app.post('/reports', async (req: Request, res: Response) => {
   if (!locationResult.ok) { res.status(400).json({ error: locationResult.message }); return; }
 
   if (reportType === 'VEHICLE') {
-    const licensePlateResult = getRequiredString(licensePlate, 'licensePlate');
-    if (!licensePlateResult.ok) { res.status(400).json({ error: licensePlateResult.message }); return; }
-
     try {
       const report = await createReport({
         type: 'VEHICLE',
@@ -230,6 +233,7 @@ app.post('/reports', async (req: Request, res: Response) => {
   try {
     const report = await createReport({
       type: 'SCAM',
+      licensePlate: licensePlateResult.value,
       description: descriptionResult.value,
       location: locationResult.value,
       personName: personNameResult.value,
