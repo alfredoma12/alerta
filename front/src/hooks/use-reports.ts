@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import type { Report } from '../lib/ui-types'
 import type { Stats } from '../lib/ui-types'
 import type { SearchMode } from '../lib/ui-types'
+import type { ReportFormData } from '../lib/ui-types'
 import { api } from '../lib/api'
 import type { TopAccount, Zone } from '../lib/ui-types'
 
@@ -11,24 +12,27 @@ interface ApiEvidence {
 }
 
 interface ApiReport {
-  id: number
-  type: 'SCAM' | 'VEHICLE'
+  id: number | string
+  type?: 'SCAM' | 'VEHICLE'
   name?: string | null
   rut?: string | null
   plate?: string | null
+  licensePlate?: string | null
   description: string
-  status: 'PENDING' | 'APPROVED' | 'REJECTED'
-  createdAt: string
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED'
+  createdAt?: string
+  date?: string
+  location?: string | null
   evidence?: ApiEvidence[]
 }
 
 function mapApiReport(item: ApiReport): Report {
-  const category = item.type === 'VEHICLE' ? 'vehiculo_robado' : 'estafa'
-  const status = item.status === 'APPROVED' ? 'verified' : item.status === 'PENDING' ? 'pending' : 'rejected'
+  const plate = item.plate || item.licensePlate || null
+  const category = item.type === 'SCAM' ? 'estafa' : 'vehiculo_robado'
   const title = item.name?.trim()
     ? `Reporte de ${item.name.trim()}`
-    : item.type === 'VEHICLE'
-      ? `Vehículo reportado ${item.plate ? `(${item.plate})` : ''}`.trim()
+    : category === 'vehiculo_robado'
+      ? `Vehículo reportado ${plate ? `(${plate})` : ''}`.trim()
       : `Denuncia por estafa ${item.rut ? `(${item.rut})` : ''}`.trim()
 
   const evidence = (item.evidence || [])
@@ -40,17 +44,18 @@ function mapApiReport(item: ApiReport): Report {
     title,
     description: item.description,
     category,
-    location: item.plate ? `Patente ${item.plate}` : item.rut ? `RUT ${item.rut}` : 'Sin referencia pública',
+    location: item.location || (plate ? `Patente ${plate}` : item.rut ? `RUT ${item.rut}` : 'Sin referencia pública'),
     region: 'Nacional',
-    status,
+    // Published reports should appear immediately without review states.
+    status: 'verified',
     votes: 0,
     userVote: null,
-    createdAt: item.createdAt,
+    createdAt: item.createdAt || item.date || new Date().toISOString(),
     isAnonymous: true,
     evidence,
-    plate: item.plate || undefined,
+    plate: plate || undefined,
     scamRut: item.rut || undefined,
-    verificationState: item.status === 'APPROVED' ? 'community_verified' : item.status === 'PENDING' ? 'review' : 'unverified',
+    verificationState: 'community_verified',
     flagsCount: 0,
   }
 }
@@ -135,43 +140,40 @@ export function useReports() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const fetchReports = useCallback(async () => {
+    setLoading(true)
+    setError('')
+
+    try {
+      const response = await api.get('/search', {
+        params: search.trim() ? { q: search.trim() } : undefined,
+      })
+
+      const items = ((response.data?.items || []) as ApiReport[]).map(mapApiReport)
+      setReports(items)
+    } catch {
+      setError('No se pudieron cargar las denuncias reales.')
+      setReports([])
+    } finally {
+      setLoading(false)
+    }
+  }, [search])
+
   useEffect(() => {
     let cancelled = false
 
-    async function fetchReports() {
-      setLoading(true)
-      setError('')
-
-      try {
-        const response = await api.get('/search', {
-          params: search.trim() ? { q: search.trim() } : undefined,
-        })
-
-        const items = ((response.data?.items || []) as ApiReport[]).map(mapApiReport)
-        if (!cancelled) {
-          setReports(items)
-        }
-      } catch {
-        if (!cancelled) {
-          setError('No se pudieron cargar las denuncias reales.')
-          setReports([])
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false)
-        }
-      }
-    }
-
     const timeout = window.setTimeout(() => {
-      void fetchReports()
+      void (async () => {
+        if (cancelled) return
+        await fetchReports()
+      })()
     }, 250)
 
     return () => {
       cancelled = true
       window.clearTimeout(timeout)
     }
-  }, [search])
+  }, [fetchReports])
 
   const filtered = reports.filter((r) => {
     const matchCat = filter === 'all' || r.category === filter
@@ -220,19 +222,32 @@ export function useReports() {
     )
   }, [])
 
-  const addReport = useCallback(
-    (data: Omit<Report, 'id' | 'votes' | 'userVote' | 'createdAt' | 'status'>) => {
-      const newReport: Report = {
-        ...data,
-        id: Math.random().toString(36).slice(2),
-        votes: 0,
-        userVote: null,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
+  const submitReport = useCallback(
+    async (data: ReportFormData) => {
+      if (data.mode === 'vehicle') {
+        await api.post('/reports', {
+          type: 'VEHICLE',
+          licensePlate: data.plate,
+          description: data.description,
+          location: data.location || `Patente ${data.plate}`,
+          contact: 'sin_contacto',
+        })
+      } else {
+        await api.post('/reports', {
+          type: 'SCAM',
+          personName: data.personName,
+          rut: data.rut,
+          alias: data.alias || undefined,
+          scamType: data.scamType,
+          description: data.description,
+          location: data.location || `RUT ${data.rut}`,
+          contact: 'sin_contacto',
+        })
       }
-      setReports((prev) => [newReport, ...prev])
+
+      await fetchReports()
     },
-    [],
+    [fetchReports],
   )
 
   return {
@@ -247,7 +262,7 @@ export function useReports() {
     search,
     setSearch,
     vote,
-    addReport,
+    submitReport,
     stats: buildStats(reports),
     zones: buildZones(reports),
     topAccounts: buildTopAccounts(reports),
