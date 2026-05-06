@@ -17,7 +17,7 @@ export default function App() {
     setSearch,
     searchMode,
     setSearchMode,
-    instantResult,
+    searchMatches,
     submitReport,
     stats,
     loading,
@@ -45,7 +45,7 @@ export default function App() {
           mode={searchMode}
           onSearchChange={setSearch}
           onModeChange={setSearchMode}
-          instantResult={instantResult}
+          searchMatches={searchMatches}
         />
         <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-6">
           <div className="rounded-xl border border-amber/30 bg-amber/10 px-4 py-3 text-xs sm:text-sm text-amber">

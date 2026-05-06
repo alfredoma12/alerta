@@ -73,21 +73,17 @@ export function useReports() {
     [fetchReports],
   )
 
-  const instantResult = (() => {
+  const searchMatches = (() => {
     const query = search.trim()
-    if (!query) return null
+    if (!query) return []
 
     const normalizedQuery = normalizeIdentifier(query)
 
     if (searchMode === 'vehicle') {
-      return (
-        reports.find((report) => normalizeIdentifier(report.licensePlate).includes(normalizedQuery)) || null
-      )
+      return reports.filter((report) => normalizeIdentifier(report.licensePlate).includes(normalizedQuery))
     }
 
-    return (
-      reports.find((report) => normalizeIdentifier(report.licensePlate).includes(normalizedQuery)) || null
-    )
+    return reports.filter((report) => normalizeIdentifier(report.licensePlate).includes(normalizedQuery))
   })()
 
   return {
@@ -96,7 +92,7 @@ export function useReports() {
     setSearch,
     searchMode,
     setSearchMode,
-    instantResult,
+    searchMatches,
     submitReport,
     stats: buildStats(reports),
     loading,

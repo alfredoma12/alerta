@@ -9,7 +9,7 @@ interface HeroProps {
   mode: SearchMode
   onSearchChange: (value: string) => void
   onModeChange: (value: SearchMode) => void
-  instantResult: PersistedReport | null
+  searchMatches: PersistedReport[]
 }
 
 const features = [
@@ -25,7 +25,7 @@ export default function Hero({
   mode,
   onSearchChange,
   onModeChange,
-  instantResult,
+  searchMatches,
 }: HeroProps) {
   return (
     <section id="inicio" className="relative pt-32 pb-20 px-4 sm:px-6 overflow-hidden">
@@ -85,11 +85,39 @@ export default function Hero({
           <div className="mt-3 text-left">
             {search.trim() === '' ? (
               <p className="text-xs text-muted">Busca por patente o RUT para validar si ya existe una denuncia.</p>
-            ) : instantResult ? (
-              <div className="rounded-xl border border-green/30 bg-green/10 p-3">
-                <p className="text-xs text-green mb-1">Registro encontrado</p>
-                <p className="text-sm text-foreground font-medium">{instantResult.licensePlate}</p>
-                <p className="text-xs text-foreground-2 mt-1">{instantResult.description}</p>
+            ) : searchMatches.length > 0 ? (
+              <div className="rounded-xl border border-green/30 bg-green/10 p-3 space-y-3">
+                <p className="text-xs text-green mb-1">{searchMatches.length} registro(s) encontrado(s)</p>
+                {searchMatches.map((match) => (
+                  <article key={match.id} className="rounded-lg border border-green/20 bg-black/10 p-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <p className="text-green/80">Patente</p>
+                        <p className="text-foreground font-medium">{match.licensePlate}</p>
+                      </div>
+                      <div>
+                        <p className="text-green/80">Fecha</p>
+                        <p className="text-foreground">{new Date(match.date).toLocaleString()}</p>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <p className="text-green/80">Descripción</p>
+                        <p className="text-foreground">{match.description}</p>
+                      </div>
+                      <div>
+                        <p className="text-green/80">Ubicación</p>
+                        <p className="text-foreground">{match.location}</p>
+                      </div>
+                      <div>
+                        <p className="text-green/80">Contacto</p>
+                        <p className="text-foreground">{match.contact}</p>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <p className="text-green/80">ID</p>
+                        <p className="text-foreground break-all">{match.id}</p>
+                      </div>
+                    </div>
+                  </article>
+                ))}
               </div>
             ) : (
               <div className="rounded-xl border border-amber/30 bg-amber/10 p-3">
