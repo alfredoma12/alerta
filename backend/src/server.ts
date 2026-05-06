@@ -3,12 +3,13 @@ import express, { Request, Response } from 'express';
 import {
   createReport,
   findReportsByLicensePlate,
-  getReportsFilePath,
-  getReports,
+  getAllReports,
+  getReportByPlate,
   initializeStore,
   normalizeLicensePlate,
   searchReports,
 } from './store';
+import { getDatabaseFilePath } from './db';
 import { AlertInput, CreateReportInput } from './types';
 
 const app = express();
@@ -48,7 +49,7 @@ async function handlePlateLookup(rawValue: unknown, fieldName: string, res: Resp
   }
 
   try {
-    const reports = await findReportsByLicensePlate(result.value);
+    const reports = await getReportByPlate(result.value);
     res.json(reports);
   } catch (error) {
     console.error('Failed to search reports:', error);
@@ -72,7 +73,7 @@ async function handleAlertRequest(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    const matchingReports = await findReportsByLicensePlate(plateResult.value);
+    const matchingReports = await getReportByPlate(plateResult.value);
 
     if (matchingReports.length === 0) {
       res.json({ message: `No report found for plate ${normalizeLicensePlate(plateResult.value)}.` });
@@ -123,7 +124,7 @@ app.get('/search', async (req: Request, res: Response) => {
     console.log(`[search] plate="${normalizedPlate}"`);
 
     try {
-      const matches = await findReportsByLicensePlate(rawPlate);
+      const matches = await getReportByPlate(rawPlate);
 
       if (matches.length === 0) {
         res.status(404).json({ error: `No report found for plate ${normalizedPlate}.` });
@@ -165,7 +166,7 @@ app.get('/search', async (req: Request, res: Response) => {
 
 app.get('/reports', async (_req: Request, res: Response) => {
   try {
-    const reports = await getReports();
+    const reports = await getAllReports();
     res.json(reports);
   } catch (error) {
     console.error('Failed to load all reports:', error);
@@ -241,7 +242,7 @@ async function startServer(): Promise<void> {
   await initializeStore();
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Backend running on port ${PORT}`);
-    console.log(`[store] Active reports file: ${getReportsFilePath()}`);
+    console.log(`[db] Active SQLite file: ${getDatabaseFilePath()}`);
     console.log('Routes: GET / | GET /test | GET /search | GET /reports | POST /reports | GET /reports/:licensePlate | GET /reports/matricula/:matricula | POST /alerts | POST /alertas');
   });
 }

@@ -11,16 +11,16 @@ It uses a JSON file as a tiny database, so there is no authentication, no extern
 - `GET /reports/:licensePlate` to search by license plate
 - `POST /alerts` to simulate an alert when a plate is found
 - CORS enabled so a frontend hosted on GitHub Pages can call the API
-- File-based storage in `data/reports.json`
+- SQLite storage in `data.db`
 - `nodemon` for local development
 
 ## Project structure
 
 ```text
 backend/
-  data/
-    reports.json
+  data.db
   src/
+    db.ts
     server.ts
     store.ts
     types.ts
@@ -205,5 +205,5 @@ await fetch('http://localhost:3001/reports', {
 ## Notes
 
 - Every request is logged with method and route.
-- The server recreates `data/reports.json` if it does not exist.
-- If `reports.json` is empty or corrupted, the server resets it to an empty array instead of crashing.
+- SQLite database file `data.db` is created automatically if missing.
+- Table `reports` is created automatically on startup if it does not exist.
