@@ -147,14 +147,11 @@ app.get('/search', async (req: Request, res: Response) => {
     const reports = await searchReports(rawQuery);
     const items = reports.map((r, index) => ({
       id: index + 1,
-      type: r.type,
-      name: r.personName || null,
-      rut: r.rut || null,
-      plate: r.licensePlate || null,
+      licensePlate: r.licensePlate,
       description: r.description,
-      status: 'APPROVED' as const,
-      createdAt: r.date,
-      evidence: [],
+      location: r.location,
+      contact: r.contact,
+      date: r.date,
     }));
     res.json({ items });
   } catch (error) {
@@ -178,19 +175,7 @@ app.get('/reports', async (_req: Request, res: Response) => {
 // ─── POST /reports ────────────────────────────────────────────────────────────
 
 app.post('/reports', async (req: Request, res: Response) => {
-  const {
-    type,
-    licensePlate,
-    description,
-    location,
-    contact,
-    personName,
-    rut,
-    alias,
-    scamType,
-  } = req.body as Partial<CreateReportInput>;
-
-  const reportType = type === 'SCAM' ? 'SCAM' : 'VEHICLE';
+  const { licensePlate, description, location, contact } = req.body as Partial<CreateReportInput>;
 
   const licensePlateResult = getRequiredString(licensePlate, 'licensePlate');
   if (!licensePlateResult.ok) {
@@ -204,43 +189,15 @@ app.post('/reports', async (req: Request, res: Response) => {
   const locationResult = getRequiredString(location, 'location');
   if (!locationResult.ok) { res.status(400).json({ error: locationResult.message }); return; }
 
-  if (reportType === 'VEHICLE') {
-    try {
-      const report = await createReport({
-        type: 'VEHICLE',
-        licensePlate: licensePlateResult.value,
-        description: descriptionResult.value,
-        location: locationResult.value,
-        contact: typeof contact === 'string' ? contact : undefined,
-      });
-      res.status(201).json(report);
-    } catch (error) {
-      console.error('Failed to create report:', error);
-      res.status(500).json({ error: 'Could not save the report.' });
-    }
-    return;
-  }
-
-  const personNameResult = getRequiredString(personName, 'personName');
-  if (!personNameResult.ok) { res.status(400).json({ error: personNameResult.message }); return; }
-
-  const rutResult = getRequiredString(rut, 'rut');
-  if (!rutResult.ok) { res.status(400).json({ error: rutResult.message }); return; }
-
-  const scamTypeResult = getRequiredString(scamType, 'scamType');
-  if (!scamTypeResult.ok) { res.status(400).json({ error: scamTypeResult.message }); return; }
+  const contactResult = getRequiredString(contact, 'contact');
+  if (!contactResult.ok) { res.status(400).json({ error: contactResult.message }); return; }
 
   try {
     const report = await createReport({
-      type: 'SCAM',
       licensePlate: licensePlateResult.value,
       description: descriptionResult.value,
       location: locationResult.value,
-      personName: personNameResult.value,
-      rut: rutResult.value,
-      alias: typeof alias === 'string' ? alias : undefined,
-      scamType: scamTypeResult.value,
-      contact: typeof contact === 'string' ? contact : undefined,
+      contact: contactResult.value,
     });
     res.status(201).json(report);
   } catch (error) {

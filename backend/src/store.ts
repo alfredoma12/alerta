@@ -19,10 +19,6 @@ export function normalizeLicensePlate(licensePlate: string): string {
   return licensePlate.toUpperCase().replace(/\s+/g, '').trim();
 }
 
-export function normalizeRut(rut: string): string {
-  return rut.toUpperCase().replace(/[^0-9K]/g, '').trim();
-}
-
 async function readReports(): Promise<Report[]> {
   await ensureReportsFile();
 
@@ -41,17 +37,24 @@ async function readReports(): Promise<Report[]> {
       return [];
     }
 
-    return (parsed as Report[]).map((item) => {
-      if (item.type) {
-        return item;
-      }
-
-      // Legacy records created before the type field existed are treated as vehicle reports.
-      return {
-        ...item,
-        type: item.licensePlate ? 'VEHICLE' : 'SCAM',
-      } as Report;
-    });
+    return (parsed as Partial<Report>[])
+      .filter(
+        (item) =>
+          typeof item.id === 'string' &&
+          typeof item.licensePlate === 'string' &&
+          typeof item.description === 'string' &&
+          typeof item.location === 'string' &&
+          typeof item.contact === 'string' &&
+          typeof item.date === 'string',
+      )
+      .map((item) => ({
+        id: item.id as string,
+        licensePlate: normalizeLicensePlate(item.licensePlate as string),
+        description: (item.description as string).trim(),
+        location: (item.location as string).trim(),
+        contact: (item.contact as string).trim(),
+        date: item.date as string,
+      }));
   } catch (error) {
     console.warn('reports.json was empty or corrupted. Resetting file.', error);
     await writeReports([]);
@@ -67,29 +70,14 @@ async function writeReports(reports: Report[]): Promise<void> {
 export async function createReport(input: CreateReportInput): Promise<Report> {
   const reports = await readReports();
 
-  const baseReport: Report = {
+  const report: Report = {
     id: crypto.randomUUID(),
-    type: input.type,
+    licensePlate: normalizeLicensePlate(input.licensePlate),
     description: input.description.trim(),
     location: input.location.trim(),
+    contact: input.contact.trim(),
     date: new Date().toISOString(),
   };
-
-  const report: Report =
-    input.type === 'VEHICLE'
-      ? {
-          ...baseReport,
-          licensePlate: input.licensePlate ? normalizeLicensePlate(input.licensePlate) : undefined,
-          contact: input.contact?.trim() || undefined,
-        }
-      : {
-          ...baseReport,
-          personName: input.personName?.trim() || undefined,
-          rut: input.rut ? normalizeRut(input.rut) : undefined,
-          alias: input.alias?.trim() || undefined,
-          scamType: input.scamType?.trim() || undefined,
-          contact: input.contact?.trim() || undefined,
-        };
 
   reports.push(report);
   await writeReports(reports);
@@ -101,7 +89,7 @@ export async function findReportsByLicensePlate(licensePlate: string): Promise<R
   const reports = await readReports();
   const normalizedPlate = normalizeLicensePlate(licensePlate);
 
-  return reports.filter((report) => report.type === 'VEHICLE' && report.licensePlate === normalizedPlate);
+  return reports.filter((report) => report.licensePlate === normalizedPlate);
 }
 
 export async function getAllReports(): Promise<Report[]> {
@@ -123,16 +111,11 @@ export async function searchReports(query: string): Promise<Report[]> {
   }
 
   const normalizedQuery = normalizeLicensePlate(query);
-  const normalizedRutQuery = normalizeRut(query);
   const lowerQuery = query.trim().toLowerCase();
 
   return reports.filter(
     (r) =>
-      (r.licensePlate || '').includes(normalizedQuery) ||
-      (r.rut || '').includes(normalizedRutQuery) ||
-      (r.personName || '').toLowerCase().includes(lowerQuery) ||
-      (r.alias || '').toLowerCase().includes(lowerQuery) ||
-      (r.scamType || '').toLowerCase().includes(lowerQuery) ||
+      r.licensePlate.includes(normalizedQuery) ||
       r.description.toLowerCase().includes(lowerQuery) ||
       r.location.toLowerCase().includes(lowerQuery),
   );
