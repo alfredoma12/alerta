@@ -80,34 +80,38 @@ export default function Hero({
             {searchQuery.trim() === '' ? (
               <p className="text-xs text-muted">Ingresa una patente y presiona Buscar para ver resultados.</p>
             ) : searchMatches.length > 0 ? (
-              <div className="rounded-xl border border-green/30 bg-green/10 p-3 space-y-3">
-                <p className="text-xs text-green mb-1">Vehiculo reportado por robo: {searchMatches.length} registro(s)</p>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-semibold uppercase tracking-wide">
+                    ⚠ Vehículo reportado por robo
+                  </span>
+                  <span className="text-xs text-muted">{searchMatches.length} reporte(s) encontrado(s)</span>
+                </div>
                 {searchMatches.map((match) => (
-                  <article key={match.id} className="rounded-lg border border-green/20 bg-black/10 p-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <article key={match.id} className="rounded-2xl border border-red-500/25 bg-red-500/5 p-5 sm:p-6 text-left">
+                    <div className="flex items-start justify-between gap-4 mb-5">
                       <div>
-                        <p className="text-green/80">Patente</p>
-                        <p className="text-foreground font-medium">{match.licensePlate}</p>
+                        <p className="text-xs text-muted uppercase tracking-widest mb-1">Patente</p>
+                        <p className="font-heading font-bold text-3xl sm:text-4xl text-foreground tracking-wider">{match.licensePlate}</p>
                       </div>
-                      <div>
-                        <p className="text-green/80">Fecha</p>
-                        <p className="text-foreground">{new Date(match.date).toLocaleString()}</p>
+                      <div className="text-right">
+                        <p className="text-xs text-muted uppercase tracking-widest mb-1">Fecha del reporte</p>
+                        <p className="text-sm text-foreground">{new Date(match.date).toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                        <p className="text-xs text-muted">{new Date(match.date).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="sm:col-span-2">
-                        <p className="text-green/80">Descripción</p>
-                        <p className="text-foreground">{match.description}</p>
+                        <p className="text-xs text-muted uppercase tracking-widest mb-1">Descripción</p>
+                        <p className="text-base text-foreground leading-relaxed">{match.description}</p>
                       </div>
                       <div>
-                        <p className="text-green/80">Ubicación</p>
-                        <p className="text-foreground">{match.location}</p>
+                        <p className="text-xs text-muted uppercase tracking-widest mb-1">Ubicación del robo</p>
+                        <p className="text-sm text-foreground">{match.location}</p>
                       </div>
                       <div>
-                        <p className="text-green/80">Contacto</p>
-                        <p className="text-foreground">{match.contact}</p>
-                      </div>
-                      <div className="sm:col-span-2">
-                        <p className="text-green/80">ID</p>
-                        <p className="text-foreground break-all">{match.id}</p>
+                        <p className="text-xs text-muted uppercase tracking-widest mb-1">Contacto</p>
+                        <p className="text-sm text-foreground">{match.contact}</p>
                       </div>
                     </div>
                   </article>
