@@ -1,221 +1,209 @@
-# Backend PostgreSQL (Express)
+# Stolen Car Backend
 
-Backend en Node.js con Express y PostgreSQL, pensado para correr en Render.
+Simple backend built with Node.js, Express and TypeScript for a stolen car reporting app.
 
-## Requisitos cumplidos
+It uses a JSON file as a tiny database, so there is no authentication, no external database server, and almost no setup.
 
-- Servidor Express en puerto `3001` (configurable por `PORT`)
-- Conexion a PostgreSQL mediante `DATABASE_URL`
-- Tabla `vehicles` e indice por `patente` creados automaticamente si no existen
-- Endpoints:
-  - `POST /api/vehicles`
-  - `GET /api/vehicles/:patente`
-  - `GET /search`
-- Seguridad con header `x-api-key` (lee `API_KEY` desde `.env`)
-- CORS limitado por lista de dominios en `ALLOWED_ORIGINS`
-- Rate limit de `100` requests por IP cada `15` minutos
-- Validacion de `patente` (obligatoria, maximo 10 caracteres)
-- Manejo de errores `500` para base de datos y `404` para no encontrado
+## Features
 
-## Variables de entorno
+- `POST /reports` to create a stolen car report
+- `GET /reports` to list all reports
+- `GET /reports/:licensePlate` to search by license plate
+- `POST /alerts` to simulate an alert when a plate is found
+- CORS enabled so a frontend hosted on GitHub Pages can call the API
+- File-based storage in `data/reports.json`
+- `nodemon` for local development
 
-### Backend `.env`
+## Project structure
 
-```env
-PORT=3001
-API_KEY=mi_clave_segura
-ALLOWED_ORIGINS=https://alfredoma12.github.io,https://alerta-7k4.pages.dev
-DATABASE_URL=postgresql://usuario:password@host:5432/database
-PGSSLMODE=require
+```text
+backend/
+  data/
+    reports.json
+  src/
+    server.ts
+    store.ts
+    types.ts
+  package.json
+  tsconfig.json
 ```
 
-### Frontend `.env.development`
+## Run locally
 
-```env
-VITE_API_URL=http://localhost:3001
-VITE_API_KEY=mi_clave_segura
-```
-
-### Frontend `.env.production`
-
-```env
-VITE_API_URL=https://tu-api-fjlx.onrender.com
-VITE_API_KEY=mi_clave_segura
-```
-
-## Instalacion y ejecucion
-
-1. Entra a la carpeta:
+1. Open the backend folder:
 
 ```bash
 cd backend
 ```
 
-2. Instala dependencias:
+2. Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Crea archivo `.env` a partir de `.env.example`:
+3. Start the development server:
 
-```env
-API_KEY=mi_clave_segura
-ALLOWED_ORIGINS=https://alfredoma12.github.io,https://alerta-7k4.pages.dev
-PORT=3001
-DATABASE_URL=postgresql://usuario:password@host:5432/database
-PGSSLMODE=disable
+```bash
+npm run dev
 ```
 
-4. Ejecuta servidor:
+The API will run on:
+
+```text
+http://localhost:3000
+```
+
+## Production run
+
+Build the TypeScript project:
+
+```bash
+npm run build
+```
+
+Start the compiled server:
 
 ```bash
 npm start
 ```
 
-Servidor disponible en:
+## Environment variables
 
-`http://localhost:3001`
-
-## Correr frontend
-
-Desde la carpeta `front`:
-
-```bash
-npm install
-npm run dev
-```
-
-Para desarrollo local, usa `front/.env.development` con `VITE_API_URL=http://localhost:3001`.
-
-## Deploy backend en Render
-
-1. Crea un Web Service en Render apuntando a la carpeta `backend`.
-2. Configura Start Command: `npm start`.
-3. Variables de entorno en Render:
+Optional:
 
 ```env
-PORT=10000
-API_KEY=mi_clave_segura
-ALLOWED_ORIGINS=https://alfredoma12.github.io,https://alerta-7k4.pages.dev
-DATABASE_URL=postgresql://usuario:password@host:5432/database
-PGSSLMODE=require
+PORT=3000
 ```
 
-4. Usa la URL publica entregada por Render (ejemplo: `https://tu-api-fjlx.onrender.com`).
-5. Actualiza `front/.env.production`:
+If `PORT` is not set, the server uses `3000`.
 
-```env
-VITE_API_URL=https://tu-api-fjlx.onrender.com
-VITE_API_KEY=mi_clave_segura
-```
+This backend is ready to deploy on Render because it only needs Node.js and an optional `PORT` environment variable.
 
-## Publicar frontend en GitHub Pages
+## API endpoints
 
-Desde `front`:
+### POST /reports
 
-```bash
-npm run build:github
-```
+Creates a stolen car report.
 
-Despues publica la rama en GitHub Pages (source: rama `main`, carpeta `/ (root)`).
+Validation rules:
 
-Importante: en produccion no uses localhost en `VITE_API_URL`. Debe ser la URL publica de Render.
+- `licensePlate` is required and must be a non-empty string
+- `description` is required and must be a non-empty string
+- `location` is required and must be a non-empty string
+- `contact` is required and must be a non-empty string
+- license plates are normalized to uppercase with spaces removed
 
-## Endpoints
-
-### POST /api/vehicles
-
-Crea un registro de vehiculo.
-
-Headers:
-
-- `Content-Type: application/json`
-- `x-api-key: tu_api_key_segura`
-
-Body de ejemplo:
+Request body:
 
 ```json
 {
-  "patente": "AB1234",
-  "marca": "Toyota",
-  "modelo": "Corolla",
-  "color": "Blanco",
-  "descripcion": "Vehiculo reportado"
+  "licensePlate": "ABC123",
+  "description": "Black sedan with broken rear window",
+  "location": "Santiago Centro",
+  "contact": "+56 9 1234 5678"
 }
 ```
 
-### GET /api/vehicles/:patente
+Notes:
 
-Busca el ultimo registro por patente.
+- `date` is generated automatically by the server
+- `licensePlate` is stored in uppercase to make searching easier
 
-Headers:
+### GET /reports/:licensePlate
 
-- `x-api-key: tu_api_key_segura`
+Returns all reports matching the given plate.
 
-Ejemplo:
+Search is case-insensitive because the server normalizes the plate before saving and before searching.
 
-`GET http://localhost:3001/api/vehicles/AB1234`
+### GET /reports
 
-### GET /search
+Returns all stored reports.
 
-Busca registros para el frontend.
+Example:
 
-Query params opcional:
+```bash
+curl http://localhost:3000/reports/ABC123
+```
 
-- `q`: texto para buscar por patente, marca, modelo, color o descripcion
+### POST /alerts
 
-Headers:
+Simulates sending an alert by logging a message in the server console.
 
-- `x-api-key: tu_api_key_segura`
+Request body:
 
-Ejemplo:
-
-`GET http://localhost:3001/search?q=AB12`
-
-## Ejemplo fetch desde frontend
-
-```js
-const API_URL = `${import.meta.env.VITE_API_URL}/api/vehicles`;
-const API_KEY = import.meta.env.VITE_API_KEY;
-
-async function crearVehiculo() {
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-    },
-    body: JSON.stringify({
-      patente: 'AB1234',
-      marca: 'Toyota',
-      modelo: 'Corolla',
-      color: 'Blanco',
-      descripcion: 'Vehiculo reportado',
-    }),
-  });
-
-  const data = await response.json();
-  console.log(data);
-}
-
-async function buscarVehiculo(patente) {
-  const response = await fetch(`${API_URL}/${encodeURIComponent(patente)}`, {
-    headers: {
-      'x-api-key': API_KEY,
-    },
-  });
-
-  const data = await response.json();
-  console.log(data);
+```json
+{
+  "licensePlate": "ABC123",
+  "seenLocation": "Valparaiso"
 }
 ```
 
-## Seguridad basica
+If a report exists, the server logs:
 
-- Se mantiene rate limit de 100 requests por IP cada 15 minutos.
-- `x-api-key` es obligatoria en todos los endpoints.
-- CORS solo permite los dominios configurados en `ALLOWED_ORIGINS` (sin wildcard).
-- Todas las respuestas de error se devuelven en JSON.
+```text
+ALERT: stolen car spotted | plate=ABC123 | seenLocation=Valparaiso | matches=1
+```
 
-Nota: cualquier variable `VITE_*` del frontend queda visible en el cliente. Usa una API key de bajo privilegio para frontend y rota esa clave cuando sea necesario.
+If no report exists, the API returns a message saying no report was found.
+
+## Example curl requests
+
+Create a report:
+
+```bash
+curl -X POST http://localhost:3000/reports \
+  -H "Content-Type: application/json" \
+  -d '{
+    "licensePlate": "ab c123",
+    "description": "Black sedan with broken rear window",
+    "location": "Santiago Centro",
+    "contact": "+56 9 1234 5678"
+  }'
+```
+
+Get all reports:
+
+```bash
+curl http://localhost:3000/reports
+```
+
+Search by license plate:
+
+```bash
+curl http://localhost:3000/reports/ABC123
+```
+
+Trigger an alert:
+
+```bash
+curl -X POST http://localhost:3000/alerts \
+  -H "Content-Type: application/json" \
+  -d '{
+    "licensePlate": "abc 123",
+    "seenLocation": "Valparaiso"
+  }'
+```
+
+## Example frontend fetch
+
+```ts
+await fetch('http://localhost:3001/reports', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    licensePlate: 'ABC123',
+    description: 'Black sedan with broken rear window',
+    location: 'Santiago Centro',
+    contact: '+56 9 1234 5678',
+  }),
+});
+```
+
+## Notes
+
+- Every request is logged with method and route.
+- The server recreates `data/reports.json` if it does not exist.
+- If `reports.json` is empty or corrupted, the server resets it to an empty array instead of crashing.
