@@ -3,7 +3,7 @@ import express, { Request, Response } from 'express';
 import {
   createReport,
   findReportsByLicensePlate,
-  getAllReports,
+  getReports,
   initializeStore,
   normalizeLicensePlate,
   searchReports,
@@ -37,10 +37,72 @@ function getRequiredString(
   return { ok: true, value: value.trim() };
 }
 
+async function handlePlateLookup(rawValue: unknown, fieldName: string, res: Response): Promise<void> {
+  const plateValue = Array.isArray(rawValue) ? rawValue[0] : rawValue;
+  const result = getRequiredString(plateValue, fieldName);
+
+  if (!result.ok) {
+    res.status(400).json({ error: result.message });
+    return;
+  }
+
+  try {
+    const reports = await findReportsByLicensePlate(result.value);
+    res.json(reports);
+  } catch (error) {
+    console.error('Failed to search reports:', error);
+    res.status(500).json({ error: 'Could not load reports.' });
+  }
+}
+
+async function handleAlertRequest(req: Request, res: Response): Promise<void> {
+  const { licensePlate, seenLocation } = req.body as Partial<AlertInput>;
+
+  const plateResult = getRequiredString(licensePlate, 'licensePlate');
+  if (!plateResult.ok) {
+    res.status(400).json({ error: plateResult.message });
+    return;
+  }
+
+  const locationResult = getRequiredString(seenLocation, 'seenLocation');
+  if (!locationResult.ok) {
+    res.status(400).json({ error: locationResult.message });
+    return;
+  }
+
+  try {
+    const matchingReports = await findReportsByLicensePlate(plateResult.value);
+
+    if (matchingReports.length === 0) {
+      res.json({ message: `No report found for plate ${normalizeLicensePlate(plateResult.value)}.` });
+      return;
+    }
+
+    console.log(
+      `ALERT: stolen car spotted | plate=${normalizeLicensePlate(plateResult.value)} | seenLocation=${locationResult.value} | matches=${matchingReports.length}`,
+    );
+
+    res.json({
+      message: 'Alert simulated successfully.',
+      licensePlate: normalizeLicensePlate(plateResult.value),
+      seenLocation: locationResult.value,
+      matchesFound: matchingReports.length,
+      reports: matchingReports,
+    });
+  } catch (error) {
+    console.error('Failed to trigger alert:', error);
+    res.status(500).json({ error: 'Could not trigger alert.' });
+  }
+}
+
 // ─── Health check ─────────────────────────────────────────────────────────────
 
 app.get('/', (_req: Request, res: Response) => {
   res.json({ status: 'ok' });
+});
+
+app.get('/test', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', message: 'test route working' });
 });
 
 // ─── GET /search?q=ABC123 ──────────────────────────────────────────────────────
@@ -85,9 +147,10 @@ app.get('/search', async (req: Request, res: Response) => {
     const reports = await searchReports(rawQuery);
     const items = reports.map((r, index) => ({
       id: index + 1,
-      type: 'VEHICLE' as const,
-      name: null,
-      plate: r.licensePlate,
+      type: r.type,
+      name: r.personName || null,
+      rut: r.rut || null,
+      plate: r.licensePlate || null,
       description: r.description,
       status: 'APPROVED' as const,
       createdAt: r.date,
@@ -104,7 +167,7 @@ app.get('/search', async (req: Request, res: Response) => {
 
 app.get('/reports', async (_req: Request, res: Response) => {
   try {
-    const reports = await getAllReports();
+    const reports = await getReports();
     res.json(reports);
   } catch (error) {
     console.error('Failed to load all reports:', error);
@@ -115,10 +178,19 @@ app.get('/reports', async (_req: Request, res: Response) => {
 // ─── POST /reports ────────────────────────────────────────────────────────────
 
 app.post('/reports', async (req: Request, res: Response) => {
-  const { licensePlate, description, location, contact } = req.body as Partial<CreateReportInput>;
+  const {
+    type,
+    licensePlate,
+    description,
+    location,
+    contact,
+    personName,
+    rut,
+    alias,
+    scamType,
+  } = req.body as Partial<CreateReportInput>;
 
-  const licensePlateResult = getRequiredString(licensePlate, 'licensePlate');
-  if (!licensePlateResult.ok) { res.status(400).json({ error: licensePlateResult.message }); return; }
+  const reportType = type === 'SCAM' ? 'SCAM' : 'VEHICLE';
 
   const descriptionResult = getRequiredString(description, 'description');
   if (!descriptionResult.ok) { res.status(400).json({ error: descriptionResult.message }); return; }
@@ -126,15 +198,45 @@ app.post('/reports', async (req: Request, res: Response) => {
   const locationResult = getRequiredString(location, 'location');
   if (!locationResult.ok) { res.status(400).json({ error: locationResult.message }); return; }
 
-  const contactResult = getRequiredString(contact, 'contact');
-  if (!contactResult.ok) { res.status(400).json({ error: contactResult.message }); return; }
+  if (reportType === 'VEHICLE') {
+    const licensePlateResult = getRequiredString(licensePlate, 'licensePlate');
+    if (!licensePlateResult.ok) { res.status(400).json({ error: licensePlateResult.message }); return; }
+
+    try {
+      const report = await createReport({
+        type: 'VEHICLE',
+        licensePlate: licensePlateResult.value,
+        description: descriptionResult.value,
+        location: locationResult.value,
+        contact: typeof contact === 'string' ? contact : undefined,
+      });
+      res.status(201).json(report);
+    } catch (error) {
+      console.error('Failed to create report:', error);
+      res.status(500).json({ error: 'Could not save the report.' });
+    }
+    return;
+  }
+
+  const personNameResult = getRequiredString(personName, 'personName');
+  if (!personNameResult.ok) { res.status(400).json({ error: personNameResult.message }); return; }
+
+  const rutResult = getRequiredString(rut, 'rut');
+  if (!rutResult.ok) { res.status(400).json({ error: rutResult.message }); return; }
+
+  const scamTypeResult = getRequiredString(scamType, 'scamType');
+  if (!scamTypeResult.ok) { res.status(400).json({ error: scamTypeResult.message }); return; }
 
   try {
     const report = await createReport({
-      licensePlate: licensePlateResult.value,
+      type: 'SCAM',
       description: descriptionResult.value,
       location: locationResult.value,
-      contact: contactResult.value,
+      personName: personNameResult.value,
+      rut: rutResult.value,
+      alias: typeof alias === 'string' ? alias : undefined,
+      scamType: scamTypeResult.value,
+      contact: typeof contact === 'string' ? contact : undefined,
     });
     res.status(201).json(report);
   } catch (error) {
@@ -146,53 +248,23 @@ app.post('/reports', async (req: Request, res: Response) => {
 // ─── GET /reports/:licensePlate ───────────────────────────────────────────────
 
 app.get('/reports/:licensePlate', async (req: Request, res: Response) => {
-  const raw = req.params.licensePlate;
-  const licensePlate = Array.isArray(raw) ? raw[0] : raw;
+  await handlePlateLookup(req.params.licensePlate, 'licensePlate', res);
+});
 
-  const result = getRequiredString(licensePlate, 'licensePlate');
-  if (!result.ok) { res.status(400).json({ error: result.message }); return; }
-
-  try {
-    const reports = await findReportsByLicensePlate(result.value);
-    res.json(reports);
-  } catch (error) {
-    console.error('Failed to search reports:', error);
-    res.status(500).json({ error: 'Could not load reports.' });
-  }
+// Compatibility alias for consumers using the Spanish path segment.
+app.get('/reports/matricula/:matricula', async (req: Request, res: Response) => {
+  await handlePlateLookup(req.params.matricula, 'matricula', res);
 });
 
 // ─── POST /alerts ─────────────────────────────────────────────────────────────
 
 app.post('/alerts', async (req: Request, res: Response) => {
-  const { licensePlate, seenLocation } = req.body as Partial<AlertInput>;
+  await handleAlertRequest(req, res);
+});
 
-  const plateResult = getRequiredString(licensePlate, 'licensePlate');
-  if (!plateResult.ok) { res.status(400).json({ error: plateResult.message }); return; }
-
-  const locationResult = getRequiredString(seenLocation, 'seenLocation');
-  if (!locationResult.ok) { res.status(400).json({ error: locationResult.message }); return; }
-
-  try {
-    const matchingReports = await findReportsByLicensePlate(plateResult.value);
-
-    if (matchingReports.length === 0) {
-      res.json({ message: `No report found for plate ${normalizeLicensePlate(plateResult.value)}.` });
-      return;
-    }
-
-    console.log(`ALERT: stolen car spotted | plate=${normalizeLicensePlate(plateResult.value)} | seenLocation=${locationResult.value} | matches=${matchingReports.length}`);
-
-    res.json({
-      message: 'Alert simulated successfully.',
-      licensePlate: normalizeLicensePlate(plateResult.value),
-      seenLocation: locationResult.value,
-      matchesFound: matchingReports.length,
-      reports: matchingReports,
-    });
-  } catch (error) {
-    console.error('Failed to trigger alert:', error);
-    res.status(500).json({ error: 'Could not trigger alert.' });
-  }
+// Compatibility alias: same behavior as /alerts
+app.post('/alertas', async (req: Request, res: Response) => {
+  await handleAlertRequest(req, res);
 });
 
 // ─── 404 catch-all ────────────────────────────────────────────────────────────
@@ -207,7 +279,7 @@ async function startServer(): Promise<void> {
   await initializeStore();
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Backend running on port ${PORT}`);
-    console.log('Routes: GET / | GET /search | GET /reports | POST /reports | GET /reports/:plate | POST /alerts');
+    console.log('Routes: GET / | GET /test | GET /search | GET /reports | POST /reports | GET /reports/:licensePlate | GET /reports/matricula/:matricula | POST /alerts | POST /alertas');
   });
 }
 
