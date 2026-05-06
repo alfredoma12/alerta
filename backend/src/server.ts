@@ -37,7 +37,7 @@ function getRequiredString(
 }
 
 app.get('/', (_req: Request, res: Response) => {
-  res.json({ message: 'Stolen car backend is running.' });
+  res.json({ status: 'ok' });
 });
 
 app.get('/reports', async (_req: Request, res: Response) => {
@@ -162,6 +162,12 @@ async function startServer(): Promise<void> {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Backend running on port ${PORT}`);
+    console.log('Routes available:');
+    console.log('  GET  /');
+    console.log('  GET  /reports');
+    console.log('  POST /reports');
+    console.log('  GET  /reports/:licensePlate');
+    console.log('  POST /alerts');
   });
 }
 
