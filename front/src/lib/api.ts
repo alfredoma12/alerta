@@ -17,8 +17,6 @@ function getRuntimeApiUrl(): string {
 
 const API = getRuntimeApiUrl()
 
-console.log('[api] baseURL =', API)
-
 export const api = axios.create({
   baseURL: API,
   headers: {

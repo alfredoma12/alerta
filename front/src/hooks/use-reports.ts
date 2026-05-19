@@ -77,9 +77,6 @@ export function useReports() {
         reward: typeof data.reward === 'number' && Number.isFinite(data.reward) ? data.reward : 0,
       }
 
-      console.log('[frontend] submitReport form data', JSON.stringify(data, null, 2))
-      console.log('[frontend] submitReport payload', JSON.stringify(payload, null, 2))
-
       await api.post('/reports', payload)
 
       await fetchReports()
