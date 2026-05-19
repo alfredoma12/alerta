@@ -54,6 +54,7 @@ export default function ReportModal({ open, onClose, onSubmit }: ReportModalProp
   }
 
   async function handleSubmit() {
+    console.log('[modal] submitting form', JSON.stringify(form, null, 2))
     setLoading(true)
     await new Promise((r) => setTimeout(r, 900))
     await onSubmit(form)
