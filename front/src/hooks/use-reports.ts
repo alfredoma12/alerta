@@ -9,6 +9,11 @@ export interface PersistedReport {
   location: string
   contact: string
   date: string
+  brand?: string
+  model?: string
+  color?: string
+  chassis?: string
+  reward?: number
 }
 
 function normalizeIdentifier(value: string): string {
@@ -63,9 +68,14 @@ export function useReports() {
 
       await api.post('/reports', {
         licensePlate,
-        description: data.description,
-        location: data.location || data.region || 'Sin ubicación',
+        description: data.description.trim(),
+        location: data.location.trim() || data.region.trim() || 'Sin ubicación',
         contact: 'sin_contacto',
+        brand: data.brand?.trim(),
+        model: data.model?.trim(),
+        color: data.color?.trim(),
+        chassis: data.chassis?.trim() || data.chassisNumber?.trim() || undefined,
+        reward: typeof data.reward === 'number' ? data.reward : undefined,
       })
 
       await fetchReports()

@@ -69,13 +69,14 @@ export interface ToastData {
 export interface ReportFormData {
   mode: SearchMode
   plate: string
-  brand: string
-  model: string
-  color: string
+  brand?: string
+  model?: string
+  color?: string
   year: string
-  chassisNumber: string
+  chassis?: string
+  chassisNumber?: string
   theftDate: string
-  reward: string
+  reward?: number
   personName: string
   rut: string
   alias: string

@@ -89,10 +89,11 @@ export default function Hero({
                 </div>
                 {searchMatches.map((match) => (
                   <article key={match.id} className="rounded-2xl border border-red-500/25 bg-red-500/5 p-5 sm:p-6 text-left">
-                    <div className="flex items-start justify-between gap-4 mb-5">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
                       <div>
                         <p className="text-xs text-muted uppercase tracking-widest mb-1">Patente</p>
                         <p className="font-heading font-bold text-3xl sm:text-4xl text-foreground tracking-wider">{match.licensePlate}</p>
+                        <p className="text-xs text-muted mt-1">{match.brand || 'Marca no informada'} · {match.model || 'Modelo no informado'}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-muted uppercase tracking-widest mb-1">Fecha del reporte</p>
@@ -100,18 +101,48 @@ export default function Hero({
                         <p className="text-xs text-muted">{new Date(match.date).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="sm:col-span-2">
-                        <p className="text-xs text-muted uppercase tracking-widest mb-1">Descripción</p>
-                        <p className="text-base text-foreground leading-relaxed">{match.description}</p>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="rounded-2xl border border-border bg-surface-2 p-4 space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <p className="text-xs text-muted uppercase tracking-widest mb-1">Color</p>
+                            <p className="text-sm text-foreground">{match.color || 'No informado'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted uppercase tracking-widest mb-1">Chasis / VIN</p>
+                            <p className="text-sm text-foreground">{match.chassis || 'No informado'}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 text-xs font-semibold border border-amber-500/20">
+                            Recompensa
+                          </span>
+                          <span className="text-sm text-foreground font-semibold">
+                            {match.reward
+                              ? new Intl.NumberFormat('es-CL', {
+                                  style: 'currency',
+                                  currency: 'CLP',
+                                  maximumFractionDigits: 0,
+                                }).format(match.reward)
+                              : 'Sin recompensa'}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted uppercase tracking-widest mb-1">Ubicación del robo</p>
-                        <p className="text-sm text-foreground">{match.location}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted uppercase tracking-widest mb-1">Contacto</p>
-                        <p className="text-sm text-foreground">{match.contact}</p>
+                      <div className="rounded-2xl border border-border bg-surface-2 p-4 space-y-4">
+                        <div>
+                          <p className="text-xs text-muted uppercase tracking-widest mb-1">Descripción</p>
+                          <p className="text-base text-foreground leading-relaxed">{match.description}</p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-foreground-2">
+                          <div>
+                            <p className="text-xs text-muted uppercase tracking-widest mb-1">Ubicación del robo</p>
+                            <p>{match.location}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted uppercase tracking-widest mb-1">Contacto</p>
+                            <p>{match.contact}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </article>

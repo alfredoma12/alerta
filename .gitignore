@@ -1,0 +1,24 @@
+# Local node modules
+node_modules/
+
+# Local environment and artifacts
+.env
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Database and runtime artifacts
+backend/data.db-shm
+backend/data.db-wal
+backend/*.db
+
+# Local root package files not part of repo
+package.json
+package-lock.json
+
+# ngrok and other local tooling
+ngrok/
+
+# OS files
+.DS_Store

@@ -16,9 +16,10 @@ const EMPTY: ReportFormData = {
   model: '',
   color: '',
   year: '',
+  chassis: '',
   chassisNumber: '',
   theftDate: '',
-  reward: '',
+  reward: undefined,
   personName: '',
   rut: '',
   alias: '',
@@ -63,9 +64,9 @@ export default function ReportModal({ open, onClose, onSubmit }: ReportModalProp
   const canNext =
     step === 0
       ? form.plate.trim().length >= 5 &&
-        form.brand.trim().length >= 2 &&
-        form.model.trim().length >= 2 &&
-        form.location.trim().length >= 3 &&
+        (form.brand?.trim().length ?? 0) >= 2 &&
+        (form.model?.trim().length ?? 0) >= 2 &&
+        (form.location?.trim().length ?? 0) >= 3 &&
         form.description.trim().length >= 20
       : true
 
@@ -141,19 +142,19 @@ export default function ReportModal({ open, onClose, onSubmit }: ReportModalProp
                 <div className="grid grid-cols-3 gap-3 mb-3">
                   <div>
                     <label className="block text-sm text-foreground-2 mb-1.5">Marca <span className="text-primary">*</span></label>
-                    <input type="text" value={form.brand} onChange={(e) => set('brand', e.target.value)}
+                    <input type="text" value={form.brand ?? ''} onChange={(e) => set('brand', e.target.value)}
                       placeholder="Toyota"
                       className="w-full px-3 py-3 rounded-xl bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
                   </div>
                   <div>
                     <label className="block text-sm text-foreground-2 mb-1.5">Modelo <span className="text-primary">*</span></label>
-                    <input type="text" value={form.model} onChange={(e) => set('model', e.target.value)}
+                    <input type="text" value={form.model ?? ''} onChange={(e) => set('model', e.target.value)}
                       placeholder="Yaris"
                       className="w-full px-3 py-3 rounded-xl bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
                   </div>
                   <div>
                     <label className="block text-sm text-foreground-2 mb-1.5">Color</label>
-                    <input type="text" value={form.color} onChange={(e) => set('color', e.target.value)}
+                    <input type="text" value={form.color ?? ''} onChange={(e) => set('color', e.target.value)}
                       placeholder="Blanco"
                       className="w-full px-3 py-3 rounded-xl bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
                   </div>
@@ -161,13 +162,14 @@ export default function ReportModal({ open, onClose, onSubmit }: ReportModalProp
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm text-foreground-2 mb-1.5">N° de chasis (opcional)</label>
-                    <input type="text" value={form.chassisNumber} onChange={(e) => set('chassisNumber', e.target.value)}
+                    <input type="text" value={form.chassis ?? ''} onChange={(e) => set('chassis', e.target.value)}
+                      placeholder="Ej: 9BWZZZ377VT004251"
                       className="w-full px-3 py-3 rounded-xl bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
                   </div>
                   <div>
                     <label className="block text-sm text-foreground-2 mb-1.5">Recompensa (opcional)</label>
-                    <input type="text" value={form.reward} onChange={(e) => set('reward', e.target.value)}
-                      placeholder="Ej: $300.000"
+                    <input type="number" min="0" step="1" value={form.reward ?? ''} onChange={(e) => set('reward', e.target.value ? Number(e.target.value) : undefined)}
+                      placeholder="Ej: 300000"
                       className="w-full px-3 py-3 rounded-xl bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
                   </div>
                 </div>
@@ -243,7 +245,12 @@ export default function ReportModal({ open, onClose, onSubmit }: ReportModalProp
                 {[
                   ['Tipo', 'Vehiculo robado'],
                   ['Título', form.title],
-                  ['Ubicacion', `${form.location || 'No informada'} - ${form.region}`],
+                  ['Marca', form.brand || 'No informada'],
+                  ['Modelo', form.model || 'No informado'],
+                  ['Color', form.color || 'No informado'],
+                  ['Chasis', form.chassis || 'No informado'],
+                  ['Recompensa', form.reward ? `${new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(form.reward)}` : 'Sin recompensa'],
+                  ['Ubicación', `${form.location || 'No informada'} - ${form.region}`],
                   ['Anónimo', form.isAnonymous ? 'Sí' : 'No'],
                 ].map(([label, value]) => (
                   <div key={label} className="flex justify-between gap-2">
