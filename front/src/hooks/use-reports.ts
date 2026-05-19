@@ -70,11 +70,11 @@ export function useReports() {
         description: data.description.trim(),
         location: data.location.trim() || data.region.trim() || 'Sin ubicación',
         contact: 'sin_contacto',
-        brand: data.brand.trim(),
-        model: data.model.trim(),
-        color: data.color.trim(),
-        chassis: data.chassis.trim() || data.chassisNumber?.trim() || undefined,
-        reward: typeof data.reward === 'number' && Number.isFinite(data.reward) ? data.reward : undefined,
+        brand: data.brand?.trim() ?? '',
+        model: data.model?.trim() ?? '',
+        color: data.color?.trim() ?? '',
+        chassis: data.chassis?.trim() || data.chassisNumber?.trim() || '',
+        reward: typeof data.reward === 'number' && Number.isFinite(data.reward) ? data.reward : 0,
       }
 
       console.log('[frontend] submitReport form data', JSON.stringify(data, null, 2))
