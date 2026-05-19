@@ -65,8 +65,7 @@ export function useReports() {
   const submitReport = useCallback(
     async (data: ReportFormData) => {
       const licensePlate = data.plate.trim() || 'SIN-PLACA'
-
-      await api.post('/reports', {
+      const payload = {
         licensePlate,
         description: data.description.trim(),
         location: data.location.trim() || data.region.trim() || 'Sin ubicación',
@@ -75,8 +74,12 @@ export function useReports() {
         model: data.model?.trim(),
         color: data.color?.trim(),
         chassis: data.chassis?.trim() || data.chassisNumber?.trim() || undefined,
-        reward: typeof data.reward === 'number' ? data.reward : undefined,
-      })
+        reward: typeof data.reward === 'number' && Number.isFinite(data.reward) ? data.reward : undefined,
+      }
+
+      console.log('[frontend] submitReport payload', payload)
+
+      await api.post('/reports', payload)
 
       await fetchReports()
     },

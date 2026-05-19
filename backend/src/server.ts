@@ -328,6 +328,8 @@ app.get('/reports', async (_req: Request, res: Response) => {
 
 app.post('/reports', async (req: Request, res: Response) => {
 
+  console.log('[server] POST /reports body', req.body)
+
   const {
     licensePlate,
     description,
@@ -408,6 +410,8 @@ app.post('/reports', async (req: Request, res: Response) => {
       chassis: getOptionalString(chassis),
       reward: parseReward(reward),
     });
+
+    console.log('[server] created report', report)
 
     res.status(201).json(report);
 

@@ -2,7 +2,8 @@ import Database from 'better-sqlite3';
 import path from 'path';
 
 const databaseFilePath = path.join(
-  process.cwd(),
+  __dirname,
+  '..',
   'data.db',
 );
 

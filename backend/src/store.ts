@@ -29,11 +29,11 @@ function mapReportRow(row: ReportRow): Report {
 
     licensePlate: row.licensePlate,
 
-    brand: row.brand ?? undefined,
-    model: row.model ?? undefined,
-    color: row.color ?? undefined,
-    chassis: row.chassis ?? undefined,
-    reward: row.reward ?? 0,
+    brand: row.brand || '',
+    model: row.model || '',
+    color: row.color || '',
+    chassis: row.chassis || '',
+    reward: Number(row.reward || 0),
 
     description: row.description,
     location: row.location,
@@ -54,10 +54,10 @@ export async function createReport(input: CreateReportInput): Promise<Report> {
 
     licensePlate: normalizeLicensePlate(input.licensePlate),
 
-    brand: input.brand?.trim() || undefined,
-    model: input.model?.trim() || undefined,
-    color: input.color?.trim() || undefined,
-    chassis: input.chassis?.trim() || undefined,
+    brand: input.brand?.trim() || '',
+    model: input.model?.trim() || '',
+    color: input.color?.trim() || '',
+    chassis: input.chassis?.trim() || '',
     reward: Number.isFinite(rewardValue) ? rewardValue : 0,
 
     description: input.description.trim(),
@@ -91,7 +91,7 @@ export async function createReport(input: CreateReportInput): Promise<Report> {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    insert.run(
+    const result = insert.run(
       report.id,
       report.licensePlate,
 
@@ -108,6 +108,7 @@ export async function createReport(input: CreateReportInput): Promise<Report> {
       report.date,
     );
 
+    console.log('[db] inserted report result', result)
     return report;
 
   } catch (error) {
@@ -238,6 +239,7 @@ export async function searchReports(query: string): Promise<Report[]> {
     const textLike2 = `%${lowerQuery}%`;
     const textLike3 = `%${lowerQuery}%`;
     const textLike4 = `%${lowerQuery}%`;
+    const textLike5 = `%${lowerQuery}%`;
 
     const rows = queryStatement.all(
       plateLike,
@@ -246,6 +248,7 @@ export async function searchReports(query: string): Promise<Report[]> {
       textLike2,
       textLike3,
       textLike4,
+      textLike5,
     ) as ReportRow[];
 
     return rows.map(mapReportRow);

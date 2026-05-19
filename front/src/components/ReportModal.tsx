@@ -168,7 +168,10 @@ export default function ReportModal({ open, onClose, onSubmit }: ReportModalProp
                   </div>
                   <div>
                     <label className="block text-sm text-foreground-2 mb-1.5">Recompensa (opcional)</label>
-                    <input type="number" min="0" step="1" value={form.reward ?? ''} onChange={(e) => set('reward', e.target.value ? Number(e.target.value) : undefined)}
+                    <input type="number" min="0" step="1" value={form.reward ?? ''} onChange={(e) => {
+                      const value = Number(e.target.value)
+                      set('reward', Number.isFinite(value) ? value : undefined)
+                    }}
                       placeholder="Ej: 300000"
                       className="w-full px-3 py-3 rounded-xl bg-surface-2 border border-border text-sm text-foreground placeholder-muted focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all" />
                   </div>
